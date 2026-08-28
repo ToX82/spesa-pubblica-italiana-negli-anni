@@ -1,0 +1,14 @@
+# I CSV si riscaricano dal portale OpenBDAP con scarica_dati.py:
+# 64 MB di roba che il repository non deve portarsi dietro.
+data/*.csv
+
+# byte-code e ambienti
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+
+# scarti di sistema e editor
+.DS_Store
+Thumbs.db
+*.swp
