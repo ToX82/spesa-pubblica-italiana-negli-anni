@@ -28,7 +28,7 @@ DEST = os.environ.get('DATA_DIR',
 SLUG_RENDICONTO = '%d-rendiconto-pubblicato-triennio-g8-od-action-plan-capitolo'
 SLUG_PREVISIONE = '%d-legge-di-bilancio-pubblicata-elaborabile-spese-capitolo'
 
-ANNI = list(range(2000, 2028))
+ANNI = list(range(2011, 2028))
 
 
 def richiesta(url, dati=None, cookie=None):
