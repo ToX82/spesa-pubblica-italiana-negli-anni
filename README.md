@@ -4,19 +4,22 @@ Una pagina statica che racconta il rendiconto generale dello Stato
 (2012–2025) e le leggi di bilancio 2016 e 2026: stessa cifra letta per
 chi spende o per finalità (COFOG), andamento storico voce per voce.
 
-Nessuna dipendenza, nessuna compilazione: HTML + CSS + JavaScript
-nativo, dati in JSON già pronti in `assets/`. Funziona anche come sito
-statico su GitHub Pages senza alcun passaggio di build.
+Nessuna compilazione: HTML + CSS + JavaScript nativo, dati in JSON già
+pronti in `assets/`. La grafica è [Bootstrap Italia](https://italia.github.io/bootstrap-italia/)
+(servita in locale da `assets/vendor/`, nessuna dipendenza da CDN);
+tipografia Titillium Web e cifre in IBM Plex Mono. Funziona anche come
+sito statico su GitHub Pages senza alcun passaggio di build.
 
 ## Struttura
 
 ```
 index.html                  la pagina
 assets/
-  style.css                 foglio di stile (nessun framework)
+  style.css                 livello di personalizzazione sopra Bootstrap Italia
   app.js                    tutto il comportamento (nessuna dipendenza)
+  vendor/                   Bootstrap Italia compilata (css + js), in locale
   data.json                 dati dell'ultimo anno (fallback senza ?anno=)
-  data_2012…2026.json       un file per anno
+  data_2011…2026.json       un file per anno
 scarica_dati.py             scarica i CSV dal portale OpenBDAP e ricompila
 costruisci_rendiconto.py    compila i CSV in JSON (descrizioni incluse)
 data/                       i CSV scaricati (ignorati da git: si riscaricano)
@@ -96,7 +99,9 @@ python3 -m http.server 8000
 
 Il codice è rilasciato sotto licenza MIT (vedi `LICENSE`); i dati restano
 open data della Ragioneria generale dello Stato, licenza CC BY, e vanno
-citati come indicato dal portale OpenBDAP.
+citati come indicato dal portale OpenBDAP. La grafica è costruita su
+Bootstrap Italia, il design system della pubblica amministrazione
+(licenza dei titolari del progetto Bootstrap Italia).
 
 Per pubblicare: il repository è pronto per GitHub Pages — i JSON compilati
 sono inclusi, quindi il sito funziona appena pushato (Settings → Pages →

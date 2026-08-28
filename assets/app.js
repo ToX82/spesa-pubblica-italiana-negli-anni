@@ -19,7 +19,7 @@
   ['occhiello', 'sommario', 'cifra-totale', 'cifra-nota', 'briciole', 'barra',
    'barra-legenda', 'contesto', 'contesto-fetta', 'contesto-testo', 'contesto-grafico',
    'nota-voce', 'voci', 'vuoto', 'fonte-nome', 'fonte-link', 'fonte-metodo', 'esplora-h',
-   'scelta', 'titolo', 'apertura-testo', 'anni', 'come-leggere'
+   'scelta', 'scelta-involucro', 'titolo', 'apertura-testo', 'anni', 'come-leggere'
   ].forEach(function (id) { dom[id] = document.getElementById(id); });
 
   var dati = null;
@@ -219,7 +219,7 @@
       if (corrente) {
         svg.appendChild(svgEl('circle', {
           cx: x(q).toFixed(1), cy: y(q.valore).toFixed(1),
-          r: 3.5, fill: 'var(--verderame)'
+          r: 3.5, fill: 'var(--accento)'
         }));
       } else if (ePrevisione(q.anno)) {
         svg.appendChild(svgEl('circle', {
@@ -622,19 +622,17 @@
     dom.occhiello.textContent = m.ente;
     dom.sommario.textContent = m.sottotitolo;
 
-    // Titolo composto: la parte centrale va in corsivo.
+    // Titolo composto: la parte centrale va in evidenza.
     dom.titolo.textContent = '';
     var t = m.titolo_display || { prima: m.titolo, corsivo: '', dopo: '' };
-    if (t.prima) {
-      dom.titolo.appendChild(document.createTextNode(t.prima));
-      if (t.corsivo || t.dopo) dom.titolo.appendChild(document.createElement('br'));
-    }
+    if (t.prima) dom.titolo.appendChild(document.createTextNode(t.prima + ' '));
     if (t.corsivo) {
       var em = document.createElement('em');
       em.textContent = t.corsivo;
       dom.titolo.appendChild(em);
+      if (t.dopo) dom.titolo.appendChild(document.createTextNode(' '));
     }
-    if (t.dopo) dom.titolo.appendChild(document.createTextNode((t.corsivo ? ' ' : '') + t.dopo));
+    if (t.dopo) dom.titolo.appendChild(document.createTextNode(t.dopo));
 
     dom['apertura-testo'].textContent = m.apertura ||
       'Una cifra così grande non dice quasi nulla da sola. Qui sotto puoi aprirla: ogni ' +
@@ -673,25 +671,59 @@
       dom.anni.hidden = true;
     }
 
+    // schede di chiave di lettura: stile nav-tabs di Bootstrap Italia,
+    // con gestione completa da tastiera (frecce, Home/End) perché il
+    // pannello è unico e ridisegnato
     dom.scelta.textContent = '';
+    var tabBtns = [];
     d.sezioni.forEach(function (sez, i) {
+      var li = document.createElement('li');
+      li.className = 'nav-item';
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'scelta-btn';
-      btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+      btn.className = 'nav-link' + (i === 0 ? ' active' : '');
+      btn.id = 'tab-' + sez.id;
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+      btn.setAttribute('tabindex', i === 0 ? '0' : '-1');
+      btn.setAttribute('aria-controls', 'pannello');
       btn.textContent = sez.etichetta || sez.domanda || sez.nome;
-      btn.addEventListener('click', function () {
-        if (stato.sezione === sez.id) return;
-        stato.sezione = sez.id;
-        stato.percorso = []; stato.aperta = null; stato.tutte = false;
-        Array.prototype.forEach.call(dom.scelta.children, function (b) {
-          b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
-        });
-        spegni(); disegna();
-      });
-      dom.scelta.appendChild(btn);
+      btn.addEventListener('click', function () { attivaTab(btn, sez); });
+      li.appendChild(btn);
+      dom.scelta.appendChild(li);
+      tabBtns.push(btn);
     });
-    dom.scelta.hidden = d.sezioni.length < 2;
+    dom.scelta.addEventListener('keydown', function (e) {
+      var i = tabBtns.indexOf(document.activeElement);
+      if (i < 0) return;
+      var j = null;
+      if (e.key === 'ArrowRight') j = (i + 1) % tabBtns.length;
+      else if (e.key === 'ArrowLeft') j = (i - 1 + tabBtns.length) % tabBtns.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = tabBtns.length - 1;
+      if (j === null) return;
+      e.preventDefault();
+      tabBtns[j].focus();
+      attivaTab(tabBtns[j], d.sezioni[j]);
+    });
+    function attivaTab(btn, sez) {
+      if (stato.sezione === sez.id) return;
+      stato.sezione = sez.id;
+      stato.percorso = []; stato.aperta = null; stato.tutte = false;
+      tabBtns.forEach(function (b) {
+        var on = b === btn;
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
+        b.classList.toggle('active', on);
+      });
+      var pannello = document.getElementById('pannello');
+      if (pannello) pannello.setAttribute('aria-labelledby', 'tab-' + sez.id);
+      spegni(); disegna();
+    }
+    dom['scelta-involucro'].hidden = d.sezioni.length < 2;
+    var pannelloIniziale = document.getElementById('pannello');
+    if (pannelloIniziale)
+      pannelloIniziale.setAttribute('aria-labelledby', 'tab-' + d.sezioni[0].id);
 
     disegna();
   }
