@@ -22,7 +22,7 @@ assets/
   data_2011…2026.json       un file per anno
 scarica_dati.py             scarica i CSV dal portale OpenBDAP e ricompila
 costruisci_rendiconto.py    compila i CSV in JSON (descrizioni incluse)
-data/                       i CSV scaricati (ignorati da git: si riscaricano)
+data/                       i CSV originali di OpenBDAP, inclusi nel repository
 LICENSE                     MIT per il codice; i dati restano CC BY RGS
 ```
 
@@ -104,6 +104,6 @@ Bootstrap Italia, il design system della pubblica amministrazione
 (licenza dei titolari del progetto Bootstrap Italia).
 
 Per pubblicare: il repository è pronto per GitHub Pages — i JSON compilati
-sono inclusi, quindi il sito funziona appena pushato (Settings → Pages →
-branch principale, cartella radice). I CSV in `data/` sono ignorati da
-git: chi vuole ricostruire i dati esegue `python3 scarica_dati.py`.
+e i CSV originali sono inclusi, quindi il sito funziona appena pushato
+(Settings → Pages → branch principale, cartella radice) e chi clona può
+ricostruire o aggiornare i dati con `python3 scarica_dati.py --forza`.
