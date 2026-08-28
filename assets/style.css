@@ -85,6 +85,7 @@ a{color:var(--accento)}
   padding:6px 0;
 }
 .testata-marchio{
+  flex:0 0 auto;   /* senza questo la striscia degli anni lo schiaccia a zero */
   color:#fff;
   font-weight:600;
   font-size:1rem;
@@ -92,8 +93,19 @@ a{color:var(--accento)}
   white-space:nowrap;
 }
 .testata-marchio:hover,.testata-marchio:focus{color:#fff;text-decoration:underline}
-.testata-portale{
+.testata-contesto{
+  flex:1 1 auto;
+  min-width:0;
   margin-left:auto;
+  text-align:right;
+  color:rgba(255,255,255,.78);
+  font-size:.84rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.testata-portale{
+  margin-left:18px;
   color:#fff;
   font-size:.9rem;
   text-decoration:none;
@@ -102,58 +114,52 @@ a{color:var(--accento)}
 }
 .testata-portale:hover,.testata-portale:focus{color:#fff;border-bottom-color:#fff}
 
-.anni{
-  display:flex;
-  flex-wrap:nowrap;
-  align-items:center;
-  gap:2px 14px;
-  overflow-x:auto;
-  scrollbar-width:none;
-  font-family:var(--mono);
-  font-size:.8rem;
-  -webkit-overflow-scrolling:touch;
-}
-.anni::-webkit-scrollbar{display:none}
-.anni-etichetta{
-  color:rgba(255,255,255,.65);
-  letter-spacing:.09em;
-  text-transform:uppercase;
-  font-size:.64rem;
-  white-space:nowrap;
-}
-.anni a{
-  color:rgba(255,255,255,.82);
-  text-decoration:none;
-  border-bottom:1px solid rgba(255,255,255,.35);
-  padding-bottom:1px;
-  white-space:nowrap;
-  transition:color 160ms ease,border-color 160ms ease;
-}
-.anni a:hover,.anni a:focus{color:#fff;border-bottom-color:#fff}
-.anni [aria-current]{
-  color:#fff;
-  font-weight:500;
-  border-bottom:2px solid #fff;
-  padding-bottom:1px;
-}
-
 /* ── Testata centrale: titolo del documento ─────────────── */
 
 .testata-centrale{
   background:#fff;
   border-bottom:1px solid var(--filo);
 }
-.testata-titolo-gruppo{
-  padding:clamp(28px,4.5vw,48px) 0 clamp(24px,3.5vw,38px);
+/* Che cosa si sta guardando: una riga, non un bivio. E sotto, per chi
+   la cerca, la porta al dettaglio per ministero e capitolo. */
+.testata-piede{
+  padding:14px 0 clamp(20px,2.6vw,26px);
+  border-top:1px solid var(--filo);
 }
-.occhiello{
-  margin:0 0 10px;
-  font-size:.75rem;
+.vista-nota{
+  margin:0;
+  max-width:74ch;
+  font-size:.83rem;
+  line-height:1.5;
+  color:var(--grigio);
+}
+.vista-altra{
+  margin:6px 0 0;
+  font-size:.83rem;
+  line-height:1.5;
+  color:var(--grigio);
+}
+.vista-altra-link{
   font-weight:600;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--accento-scuro);
+  text-decoration:none;
+  border-bottom:1px solid rgba(0,102,204,.35);
 }
+.vista-altra-link::after{content:"\00a0\2192"}
+.vista-altra-link:hover,.vista-altra-link:focus{border-bottom-color:currentColor}
+
+.testata-titolo-gruppo{
+  padding:clamp(26px,4vw,44px) 0 clamp(20px,2.8vw,30px);
+}
+@media (min-width:900px){
+  .testata-titolo-gruppo{
+    display:grid;
+    grid-template-columns:1.05fr 1fr;
+    align-items:end;
+    gap:16px 52px;
+  }
+  .testata-titolo-gruppo .sommario{margin-top:0;padding-bottom:.35rem}
+}
+
 .titolo{
   margin:0;
   font-weight:700;
@@ -168,7 +174,7 @@ a{color:var(--accento)}
 }
 .sommario{
   margin:.8rem 0 0;
-  max-width:56ch;
+  max-width:52ch;
   font-size:clamp(1rem,1.5vw,1.15rem);
   line-height:1.5;
   color:var(--inchiostro-70);
@@ -183,34 +189,208 @@ a{color:var(--accento)}
 .apertura-griglia{
   display:grid;
   grid-template-columns:minmax(0,1fr);
-  gap:24px;
-  padding-top:clamp(32px,4.5vw,52px);
-  padding-bottom:clamp(32px,4.5vw,52px);
+  gap:22px;
+  padding-top:clamp(26px,3.4vw,40px);
+  padding-bottom:clamp(22px,3vw,34px);
 }
-@media (min-width:820px){
-  .apertura-griglia{grid-template-columns:1.15fr 1fr;align-items:end;gap:48px}
+@media (min-width:900px){
+  .apertura-griglia{grid-template-columns:1.85fr 1fr;align-items:end;gap:40px}
 }
-.cifra{
+
+/* ── La fascia del bilancio ─────────────────────────────
+   Entrate, uscite, saldo nell'ordine della sottrazione. Le prime due
+   carte sono anche il comando che sceglie che cosa si esplora sotto. */
+
+.conti{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));
+  gap:10px;
+}
+.conti[data-uno]{display:block}
+.conto{
   display:block;
+  width:100%;
+  margin:0;
+  padding:13px 16px 15px;
+  text-align:left;
+  font-family:inherit;
+  background:#fff;
+  border:1px solid var(--filo);
+  border-radius:var(--raggio);
+  border-top:3px solid var(--filo);
+  color:var(--inchiostro);
+  transition:border-color 160ms ease,background 160ms ease;
+}
+button.conto{cursor:pointer}
+button.conto:hover{border-color:var(--grigio-chiaro);border-top-color:var(--accento)}
+.conto-nome{
+  display:block;
+  font-size:.7rem;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--grigio);
+}
+.conto-cifra{
+  display:block;
+  margin-top:6px;
   font-weight:700;
   font-variant-numeric:lining-nums tabular-nums;
-  font-size:clamp(2.7rem,9vw,5.6rem);
-  line-height:.95;
-  letter-spacing:-.025em;
+  font-size:clamp(1.4rem,2.5vw,2.05rem);
+  line-height:1.05;
+  letter-spacing:-.02em;
+  white-space:nowrap;
   color:var(--accento-scuro);
 }
-.cifra-nota{
+.conto-note{
   display:block;
-  margin-top:10px;
+  margin-top:5px;
   font-family:var(--mono);
-  font-size:.82rem;
+  font-size:.74rem;
+  line-height:1.5;
+  white-space:nowrap;
   color:var(--grigio);
+}
+.conto-note:first-of-type{margin-top:8px}
+.conto[aria-pressed="true"]{
+  border-color:var(--accento);
+  border-top-color:var(--accento);
+  background:rgba(0,102,204,.05);
+}
+.conto[aria-pressed="true"] .conto-nome{color:var(--accento-scuro)}
+.conto-saldo{
+  border-top-color:var(--c8);
+  background:var(--superficie);
+}
+.conto-saldo-rosso .conto-cifra{color:var(--c8)}
+
+/* il bilancio dello Stato ha una cifra sola, e resta l'eroe */
+.conto-solo{
+  border:0;
+  background:transparent;
+  padding:0;
+}
+.conto-solo .conto-nome{display:none}
+.conto-solo .conto-cifra{
+  font-size:clamp(2.6rem,8.4vw,5.2rem);
+  line-height:.95;
+  letter-spacing:-.025em;
+}
+.conto-solo .conto-note{margin-top:10px;font-size:.82rem;white-space:normal}
+
+.racconto{
+  margin:16px 0 0;
+  max-width:68ch;
+  font-size:.95rem;
+  line-height:1.55;
+  color:var(--inchiostro-70);
 }
 .apertura-testo{
   margin:0;
-  max-width:42ch;
+  max-width:44ch;
   color:var(--inchiostro-70);
 }
+
+/* ── La linea del tempo (elemento firma) ────────────────
+   L'anno non si sceglie in una fila di link: si sceglie sulla linea
+   del totale, dove si vede anche che cosa è successo. */
+
+.tempo{
+  margin-top:clamp(20px,3vw,30px);
+  padding:clamp(16px,2.2vw,22px) 0 clamp(20px,2.6vw,26px);
+  border-top:1px solid var(--filo);
+}
+.tempo-testa{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px 16px;
+}
+.tempo-legenda{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 16px;
+  margin:0 0 0 auto;
+  font-size:.78rem;
+  color:var(--grigio);
+}
+.tempo-voce-legenda{display:inline-flex;align-items:center;gap:7px}
+.tempo-voce-legenda i{width:11px;height:11px;border-radius:2px;flex:0 0 auto}
+.tempo-segno-pieno{background:#c2d4e8}
+.tempo-segno-vuoto{background:#eecfd3;border:1px solid #dda9b1}
+.tempo-etichetta{
+  font-size:.68rem;
+  font-weight:600;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--grigio);
+}
+.tempo-passo{display:flex;align-items:center;gap:8px}
+.tempo-freccia{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  border:1px solid var(--filo);
+  border-radius:var(--raggio);
+  background:#fff;
+  color:var(--accento);
+  font-size:1.25rem;
+  line-height:1;
+  text-decoration:none;
+  cursor:pointer;
+  transition:border-color 160ms ease,background 160ms ease;
+}
+.tempo-freccia:hover{border-color:var(--accento);background:#fff;color:var(--accento-scuro)}
+.tempo-freccia[aria-disabled]{
+  color:var(--grigio-chiaro);
+  opacity:.45;
+  pointer-events:none;
+}
+.tempo-scelta{
+  min-width:10ch;
+  height:36px;
+  padding:0 8px;
+  border:1px solid var(--filo);
+  border-radius:var(--raggio);
+  background:#fff;
+  color:var(--inchiostro);
+  font-family:var(--mono);
+  font-size:.95rem;
+  font-weight:500;
+  cursor:pointer;
+}
+.tempo-scelta:hover{border-color:var(--accento)}
+.tempo-grafico{margin-top:8px}
+.tempo-svg{display:block;max-width:100%;height:auto}
+.tempo-asse{stroke:var(--filo);stroke-width:1}
+.tempo-barra{fill:#c2d4e8;transition:fill 140ms ease}
+.tempo-cappello{fill:#eecfd3;transition:fill 140ms ease}
+.tempo-cappello-qui{fill:#d98a95}
+.tempo-barra-prevista{fill:#e2eaf3;stroke:#a9c1dc;stroke-width:1}
+.tempo-barra-qui{fill:var(--accento)}
+.tempo-barra-qui.tempo-barra-prevista{fill:#cfe2f7;stroke:var(--accento);stroke-width:1.5}
+.tempo-anno{
+  font-family:var(--mono);
+  font-size:11px;
+  fill:var(--grigio-chiaro);
+}
+.tempo-anno-qui{
+  font-size:12.5px;
+  font-weight:600;
+  fill:var(--accento-scuro);
+}
+.tempo-colpo{fill:transparent;cursor:pointer}
+.tempo-colpo:hover{fill:rgba(0,102,204,.05)}
+.tempo-barra[data-sfiorata]{fill:#9dbbdd}
+.tempo-barra-qui[data-sfiorata]{fill:var(--accento-scuro)}
+.tempo-gruppo:hover .tempo-cappello{fill:#e0aeb6}
+
+/* mentre arriva l'anno nuovo la pagina resta leggibile ma spenta */
+html[data-caricando]{cursor:progress}
+html[data-caricando] .apertura-cifra,
+html[data-caricando] .esplora{opacity:.5;transition:opacity 120ms ease}
 
 /* ── Esplorazione ───────────────────────────────────────── */
 
@@ -374,40 +554,66 @@ a{color:var(--accento)}
 
 .contesto{
   margin:0 0 clamp(24px,3vw,32px);
-  padding:16px 0 0;
-  border-top:1px solid var(--filo);
+  padding:clamp(18px,2.4vw,24px) 0 0;
 }
-.contesto-riga{
-  height:5px;
-  width:100%;
-  background:var(--filo);
-  border-radius:100px;
-  overflow:hidden;
+/* I due blocchi di testo affiancati, il grafico sotto a tutta larghezza:
+   così l'andamento ha lo spazio che gli serve e le parole una misura
+   leggibile invece di una riga lunghissima. */
+.contesto-griglia{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:26px;
+  align-items:start;
 }
-.contesto-fetta{
-  display:block;
-  height:100%;
-  width:0;
-  background:var(--accento);
-  border-radius:100px;
-  transition:width var(--transizione);
+@media (min-width:900px){
+  .contesto-griglia[data-due]{
+    grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+    gap:clamp(28px,3.4vw,52px);
+  }
 }
-.contesto-testo{
-  margin:10px 0 0;
-  font-size:.87rem;
+.contesto-parole{min-width:0;max-width:74ch}
+.contesto-andamento{margin-top:clamp(24px,3vw,34px)}
+.contesto-grafico{margin-top:10px}
+
+/* Etichetta di blocco: dice che cosa si sta guardando, che era la
+   domanda a cui la pagina non rispondeva. */
+.blocco-etichetta{
+  margin:0 0 10px;
+  font-size:.68rem;
+  font-weight:700;
+  letter-spacing:.13em;
+  text-transform:uppercase;
   color:var(--grigio);
 }
-.contesto-grafico{margin-top:16px}
+
+/* Testata della voce aperta: nome e cifre, in chiaro. */
+.voce-testata{margin:2px 0 clamp(22px,3vw,30px)}
+.voce-titolo{
+  margin:0;
+  font-weight:700;
+  font-size:clamp(1.3rem,2.4vw,1.75rem);
+  line-height:1.15;
+  letter-spacing:-.01em;
+  color:var(--inchiostro);
+}
+.testata-cifre{
+  margin:8px 0 0;
+  font-family:var(--mono);
+  font-size:.85rem;
+  line-height:1.5;
+  color:var(--grigio);
+}
+
+.composizione{margin-top:clamp(26px,3.4vw,38px)}
 
 /* ── Grafico d'andamento ────────────────────────────────── */
 
-.andamento{
-  margin:0;
-  max-width:640px;
-}
+.andamento{margin:0}
+.voce-scheda .andamento{max-width:100%}
 .andamento svg{
   display:block;
   width:100%;
+  max-width:100%;
   height:auto;
   overflow:visible;
 }
@@ -435,14 +641,10 @@ a{color:var(--accento)}
 /* ── Nota della voce corrente ───────────────────────────── */
 
 .nota-voce{
-  margin:0 0 clamp(22px,3vw,30px);
-  max-width:62ch;
-  padding:14px 18px;
-  background:var(--superficie);
-  border-left:4px solid var(--accento);
-  border-radius:0 var(--raggio) var(--raggio) 0;
+  margin:0;
+  max-width:66ch;
   font-size:.95rem;
-  line-height:1.6;
+  line-height:1.65;
   color:var(--inchiostro-70);
 }
 
@@ -550,28 +752,68 @@ a{color:var(--accento)}
   text-transform:uppercase;
   color:var(--accento-scuro);
 }
-.voce-piu::after{content:"›";font-size:1rem;line-height:1;transform:translateY(-1px);transition:transform 180ms ease}
-.voce-testa:hover .voce-piu::after{transform:translate(2px,1px)}
+.voce-piu::after{
+  content:"›";
+  font-size:1rem;
+  line-height:1;
+  transform:translateY(-1px);
+  transition:transform 180ms ease;
+}
+/* Due gesti, due segni: «›» scende di livello, «⌄» apre qui, «⌃» chiude.
+   Il segno è lo stesso carattere ruotato, così restano coerenti. */
+.voce[data-aperta="no"] .voce-testa:hover .voce-piu::after{transform:translate(2px,1px)}
+.voce-piu-scheda::after{transform:rotate(90deg)}
+.voce[data-aperta="no"] .voce-testa:hover .voce-piu-scheda::after{transform:rotate(90deg) translateX(2px)}
+.voce[data-aperta="si"] .voce-piu-scheda::after{transform:rotate(-90deg)}
+
+/* Due segnali, uno per lavoro: fondo e filetto verticale nel colore
+   della voce dicono dove comincia e dove finisce il blocco aperto; la
+   freccia e l'etichetta dicono in che stato è. Il nome non cambia
+   colore: sembrerebbe un collegamento, e non lo è. */
+.voce[data-aperta="si"]{
+  background:var(--superficie);
+  box-shadow:inset 3px 0 0 var(--voce-colore,var(--c1));
+}
+.voce[data-aperta="si"] .voce-testa{background:transparent}
+.voce[data-aperta="si"] .voce-misura{background:#e3e9f1}
 
 /* scheda di dettaglio (foglie) */
 
 .voce-scheda{
-  padding:0 4px 24px 30px;
-  max-width:62ch;
+  padding:2px 4px 26px 30px;
 }
+.scheda-griglia{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:22px;
+  align-items:start;
+}
+@media (min-width:900px){
+  .scheda-griglia{
+    grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+    gap:clamp(28px,3.4vw,52px);
+  }
+}
+.scheda-parole{min-width:0;max-width:66ch}
+.scheda-numeri{min-width:0}
+.scheda-andamento{margin-top:clamp(22px,2.8vw,30px)}
+.scheda-andamento .blocco-etichetta{margin-bottom:6px}
 .voce-scheda p{
-  margin:0 0 12px;
+  margin:0;
   color:var(--inchiostro-70);
   font-size:.95rem;
+  line-height:1.65;
 }
 .voce-scheda dl{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
-  gap:14px 28px;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:16px 28px;
   margin:0;
-  padding-top:4px;
-  border-top:1px solid var(--filo);
   font-size:.82rem;
+}
+/* quattro dati in due colonne: con tre per riga l'ultimo resta solo */
+@media (min-width:900px){
+  .scheda-numeri dl{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 .voce-scheda .dato{display:flex;flex-direction:column;gap:2px;min-width:0}
 .voce-scheda dt{
@@ -604,10 +846,10 @@ a{color:var(--accento)}
   }
   .voce-misura{margin-top:8px;max-width:none}
   .voce-piu{margin-top:6px}
-  .voce-scheda{padding:0 2px 20px 20px}
-  .voce-scheda dl{gap:12px 20px}
+  .voce-scheda{padding:2px 2px 22px 20px}
+  .voce-scheda dl{gap:14px 20px}
   .barra{height:52px}
-  .contesto-testo,.nota-voce{font-size:.9rem}
+  .nota-voce{font-size:.9rem}
   /* a schermo stretto il titolo è già sotto: la riga resta su una
      sola linea con anni e portale */
   .testata-marchio{display:none}
@@ -700,3 +942,44 @@ a{color:var(--accento)}
     transition-duration:1ms !important;
   }
 }
+
+
+/* ── Il ponte fra le due viste ──────────────────────────── */
+
+.ponte{
+  margin-top:20px;
+  padding:13px 16px 15px;
+  border-left:3px solid var(--c2);
+  border-radius:0 var(--raggio) var(--raggio) 0;
+  background:var(--superficie);
+}
+.voce-scheda .ponte{background:#fff}
+.ponte-testa{
+  margin:0;
+  font-size:.95rem;
+  line-height:1.45;
+  color:var(--inchiostro);
+}
+.ponte-testa strong{
+  font-family:var(--mono);
+  font-weight:500;
+  font-size:.94em;
+  white-space:nowrap;
+}
+.ponte-nota{
+  margin:.45rem 0 0;
+  max-width:64ch;
+  font-size:.82rem;
+  line-height:1.5;
+  color:var(--grigio);
+}
+.ponte-vai{
+  display:inline-block;
+  margin-top:.65rem;
+  font-size:.87rem;
+  font-weight:600;
+  text-decoration:none;
+  border-bottom:1px solid rgba(0,102,204,.35);
+}
+.ponte-vai::after{content:"\00a0\2192"}
+.ponte-vai:hover,.ponte-vai:focus{border-bottom-color:currentColor}

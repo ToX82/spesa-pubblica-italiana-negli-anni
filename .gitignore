@@ -1,5 +1,9 @@
-# i CSV di data/ sono inclusi nel repository: 16 file, ~67 MB.
-# Per riscaricarli aggiornati dal portale OpenBDAP: python3 scarica_dati.py --forza
+# I dati grezzi sono inclusi nel repository, così chi clona ricompila
+# senza rete: i CSV di data/ (16 file, ~67 MB) dal portale OpenBDAP e le
+# tabelle JSON-stat di data/eurostat/ (5 file, ~1,7 MB) da Eurostat.
+# Per riscaricarli aggiornati:
+#   python3 scarica_dati.py --forza
+#   python3 scarica_eurostat.py --forza
 
 # byte-code e ambienti
 __pycache__/

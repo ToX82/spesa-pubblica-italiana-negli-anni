@@ -103,16 +103,37 @@ def frase(s):
     return low[:1].upper() + low[1:]
 
 NOTE_COFOG = {
- '01': 'Amministrazione generale, affari esteri, aiuti internazionali e — voce di gran lunga più pesante — le transazioni sul debito pubblico: interessi e ammortamento, cioè i rimborsi di capitale.',
- '02': 'Forze armate, missioni internazionali, ricerca militare.',
- '03': 'Polizia, vigili del fuoco, tribunali, carceri.',
- '04': 'Sostegno all\u2019economia: trasporti, energia, agricoltura, industria, comunicazioni, lavoro.',
- '05': 'Rifiuti, acque reflue, tutela della biodiversità, lotta all\u2019inquinamento.',
- '06': 'Edilizia abitativa, servizi idrici, illuminazione e sviluppo urbano.',
- '07': 'Ospedali, farmaci, servizi sanitari. Nel bilancio dello Stato compare soprattutto come trasferimento alle regioni, che gestiscono il Servizio sanitario nazionale.',
- '08': 'Sport, cultura, servizi ricreativi, editoria, culto.',
- '09': 'Scuola di ogni grado, università, diritto allo studio.',
- '10': 'Pensioni, sostegno a famiglie, disoccupazione, disabilità, esclusione sociale.',
+ '01': 'Amministrazione generale, servizi fiscali, affari esteri e aiuti '
+       'internazionali, ricerca di base. Comprende le transazioni sul debito '
+       'pubblico — interessi e ammortamento — che ne sono di gran lunga la '
+       'componente maggiore.',
+ '02': 'Forze armate, missioni internazionali, difesa civile, ricerca e '
+       'approvvigionamenti militari.',
+ '03': 'Polizia, vigili del fuoco, tribunali e istituti penitenziari: una '
+       'funzione a forte intensità di personale, la cui spesa dipende '
+       'soprattutto da organici e rinnovi contrattuali.',
+ '04': 'Sostegno all’economia: trasporti e infrastrutture, energia, '
+       'agricoltura, industria, comunicazioni e politiche del lavoro. Vi '
+       'confluisce la gran parte degli incentivi alle attività produttive.',
+ '05': 'Rifiuti, acque reflue, riduzione dell’inquinamento, tutela della '
+       'biodiversità e del paesaggio. Nel bilancio dello Stato è una quota '
+       'piccola, perché la spesa ambientale è in prevalenza comunale.',
+ '06': 'Edilizia abitativa, assetto del territorio, servizio idrico e '
+       'illuminazione pubblica. Comprende i crediti d’imposta per la '
+       'riqualificazione edilizia, che dal 2021 ne hanno fatto oscillare '
+       'fortemente l’importo.',
+ '07': 'Ospedali, farmaci, servizi sanitari. Nel bilancio dello Stato la sanità '
+       'compare quasi esclusivamente come trasferimento alle Regioni, che ne '
+       'curano poi l’erogazione: la cifra misura il finanziamento, non il '
+       'servizio.',
+ '08': 'Sport, cultura, spettacolo, editoria, servizio pubblico radiotelevisivo '
+       'e servizi di culto.',
+ '09': 'Scuola di ogni ordine e grado, università e diritto allo studio. Il '
+       'costo del personale docente ne determina quasi interamente l’andamento.',
+ '10': 'Pensioni, sostegno alle famiglie, disoccupazione, invalidità, contrasto '
+       'alla povertà. Nel bilancio dello Stato la voce è più piccola di quanto '
+       'ci si aspetti, perché le prestazioni sono erogate dagli enti di '
+       'previdenza: qui compare il concorso statale al loro finanziamento.',
 }
 
 # Le descrizioni che seguono sono sintesi redazionali di testi ufficiali:
@@ -122,162 +143,446 @@ NOTE_COFOG = {
 # non ai nomi, per sopravvivere alle rinomine dei ministeri.
 
 DESCR_AMMINISTRAZIONE = {
- '2':  'La cassa e il bilancio dello Stato: fiscalità, tesoreria, debito pubblico, '
-       'stipendi e pensioni dei dipendenti pubblici. Passa da qui gran parte della '
-       'spesa, anche quella decisa altrove.',
- '3':  'Imprese, industria e made in Italy: incentivi alle imprese, commercio con '
-       'l\u2019estero, tutela del consumatore e politiche del commercio.',
- '4':  'Welfare e lavoro: i trasferimenti a INPS per pensioni e maggiorazioni sociali, '
-       'il sostegno al reddito e le politiche attive del lavoro.',
- '5':  'La giustizia civile e penale: magistratura, avvocatura dello Stato, '
-       'carceri e cancellerie.',
- '6':  'La rappresentanza dell\u2019Italia nel mondo: rete diplomatica e consolare, '
-       'cooperazione allo sviluppo, italiani all\u2019estero.',
- '7':  'La scuola di ogni ordine e grado: stipendi dei docenti, edilizia scolastica, '
-       'diritto allo studio.',
- '8':  'Sicurezza e territorio: polizie di Stato, prefetture, vigili del fuoco, '
-       'elezioni, cittadinanza e immigrazione.',
- '9':  'Ambiente e sicurezza energetica: clima, aree protette, rifiuti, risorse '
-       'idriche e approvvigionamenti energetici.',
- '10': 'Opere pubbliche e trasporti: strade, ferrovie, porti, aeroporti e navigazione '
-       'interna.',
- '11': 'Università e ricerca scientifica: atenei, enti di ricerca (CNR, ASI, INFN), '
-       'borse di studio e dottorati. Il ministero è tornato autonomo nel 2021: prima '
-       'questa spesa stava nell\u2019istruzione.',
- '12': 'Le forze armate: personale, missioni internazionali, mezzi e infrastrutture '
-       'militari.',
- '13': 'Agricoltura, sovranità alimentare e foreste: la politica agricola comune, '
-       'la pesca e le filiere agroalimentari.',
- '14': 'Beni culturali e spettacolo: musei statali, tutela e restauro, cinema, '
-       'teatro ed editoria.',
- '15': 'Il finanziamento del Servizio sanitario nazionale: trasferimenti alle regioni, '
-       'farmaci, veterinaria e profilassi.',
- '16': 'La promozione del turismo italiano e dei grandi eventi collegati.',
+ '2': 'La cassa e il bilancio dello Stato: fiscalità e agenzie fiscali, '
+      'tesoreria, gestione del debito pubblico, retribuzioni e pensioni dei '
+      'dipendenti pubblici, trasferimenti a Regioni ed enti previdenziali. È di '
+      'gran lunga l’amministrazione con il peso maggiore, ma non perché decida '
+      'quella spesa: vi transitano risorse decise altrove, che poi altri enti '
+      'erogano. Qui sta anche il servizio del debito, che da solo vale circa un '
+      'terzo del bilancio.',
+ '3': 'Imprese e made in Italy: incentivi agli investimenti, crediti d’imposta '
+      'per beni strumentali e ricerca, politiche industriali, commercio con '
+      'l’estero, tutela del consumatore e della proprietà industriale. Buona '
+      'parte del sostegno alle imprese passa da qui, ma in forma di '
+      'agevolazione fiscale più che di erogazione diretta.',
+ '4': 'Lavoro e politiche sociali: il concorso dello Stato al finanziamento '
+      'dell’INPS per pensioni e maggiorazioni sociali, gli ammortizzatori '
+      'sociali, gli incentivi all’occupazione, le misure di contrasto alla '
+      'povertà. Gran parte della spesa non resta qui: è trasferita agli enti '
+      'previdenziali, che sono quelli che poi pagano le prestazioni.',
+ '5': 'Giustizia civile e penale: magistratura ordinaria e minorile, uffici '
+      'giudiziari, avvocatura dello Stato, amministrazione penitenziaria. È un '
+      'ministero a fortissima intensità di personale, quindi la spesa segue '
+      'organici e rinnovi contrattuali più che le riforme processuali.',
+ '6': 'Affari esteri e cooperazione internazionale: rete diplomatica e '
+      'consolare, contributi alle organizzazioni internazionali, aiuto pubblico '
+      'allo sviluppo, promozione culturale e servizi agli italiani all’estero.',
+ '7': 'Istruzione scolastica: retribuzioni del personale docente e ausiliario '
+      'di ogni ordine e grado, funzionamento degli istituti, diritto allo '
+      'studio, edilizia scolastica. Il costo del personale ne determina quasi '
+      'interamente l’andamento, il che rende la spesa poco flessibile da un '
+      'anno all’altro.',
+ '8': 'Interno: Polizia di Stato, prefetture, vigili del fuoco, sistema di '
+      'accoglienza e immigrazione, consultazioni elettorali, servizi '
+      'demografici. Comprende anche i trasferimenti agli enti locali gestiti '
+      'dal ministero.',
+ '9': 'Ambiente e sicurezza energetica: politiche per il clima, aree protette e '
+      'biodiversità, ciclo dei rifiuti e delle acque, dissesto idrogeologico, '
+      'sicurezza degli approvvigionamenti e incentivi alle fonti rinnovabili. '
+      'La spesa energetica è la componente più volatile, perché reagisce ai '
+      'prezzi internazionali.',
+ '10': 'Infrastrutture e trasporti: rete stradale e autostradale, ferrovie, '
+       'porti e aeroporti, trasporto pubblico locale, edilizia. È il ministero '
+       'con la quota maggiore di spesa in conto capitale, quindi il più esposto '
+       'ai tempi di realizzazione delle opere: fra quanto è stanziato e quanto '
+       'è effettivamente speso in un anno la distanza è ampia.',
+ '11': 'Università e ricerca: finanziamento ordinario degli atenei, enti di '
+       'ricerca come CNR, ASI e INFN, borse di studio e dottorati, programmi di '
+       'ricerca nazionali ed europei. Il ministero è tornato autonomo nel 2020: '
+       'negli anni precedenti questa spesa figura sotto l’istruzione, e la '
+       'serie storica ne risente.',
+ '12': 'Difesa: personale militare e civile, esercizio e addestramento, mezzi e '
+       'infrastrutture, missioni internazionali. Le retribuzioni ne assorbono '
+       'la parte prevalente; gli investimenti in sistemi d’arma sono in parte '
+       'iscritti al bilancio di altri ministeri, quindi la spesa militare '
+       'complessiva non coincide con questa cifra.',
+ '13': 'Agricoltura, sovranità alimentare e foreste: attuazione della politica '
+       'agricola comune, sviluppo rurale, pesca, controlli sulla qualità e '
+       'sulla sicurezza alimentare, gestione del patrimonio forestale. Una '
+       'quota rilevante delle risorse è di origine europea e transita dal '
+       'bilancio nazionale.',
+ '14': 'Cultura: tutela e restauro del patrimonio, musei e siti archeologici '
+       'statali, archivi e biblioteche, sostegno a cinema, spettacolo dal vivo '
+       'ed editoria. La spesa di funzionamento e tutela prevale nettamente su '
+       'quella di investimento.',
+ '15': 'Salute: il concorso dello Stato al finanziamento del Servizio sanitario '
+       'nazionale, la governance farmaceutica, la prevenzione, gli istituti di '
+       'ricovero e cura a carattere scientifico. La quasi totalità della spesa '
+       'è trasferita alle Regioni, che gestiscono il servizio: quanto lo Stato '
+       'spende direttamente per la sanità è una frazione minima di quanto la '
+       'finanzia.',
+ '16': 'Turismo: promozione dell’offerta turistica italiana, sostegno alle '
+       'imprese del settore, organizzazione dei grandi eventi. È il ministero '
+       'con il bilancio più contenuto.',
 }
 
 DESCR_MISSIONE = {
- '001': 'Il costo della testa dello Stato: Quirinale, Parlamento, Corte costituzionale, '
-        'CSM e Presidenza del Consiglio.',
- '002': 'Il funzionamento del Governo e delle sue strutture di supporto e di '
-        'rappresentanza.',
- '003': 'Come lo Stato finanzia Regioni ed enti locali: il concorso alla spesa sanitaria, '
-        'le compartecipazioni fiscali e le altre regolazioni contabili.',
- '004': 'L\u2019Italia in Europa e nel mondo: il contributo al bilancio dell\u2019Unione '
-        'europea (la parte più grossa), gli aiuti internazionali, la politica economica estera.',
- '005': 'Difesa e sicurezza del territorio: forze armate, missioni e capacità militari.',
- '006': 'Giustizia: magistratura, avvocatura dello Stato, carceri e giustizia minorile.',
- '007': 'Ordine pubblico: polizie di Stato, guardia di finanza e sicurezza democratica.',
- '008': 'Soccorso civile: previsione e prevenzione dei rischi, vigili del fuoco, '
-        'interventi nelle emergenze e ricostruzione.',
- '009': 'Agricoltura e pesca: sostegno alle imprese e alle filiere, in larga parte con '
-        'fondi europei della PAC.',
- '010': 'Energia: fonti, diversificazione degli approvvigionamenti e transizione.',
- '011': 'Sostegno alle imprese e alla competitività, in gran parte per via fiscale.',
- '012': 'Regolazione dei mercati: le agenzie e le autorità che vigilano su concorrenza, '
-        'comunicazioni, energia e altri settori.',
- '013': 'Trasporto pubblico e diritto alla mobilità: contributi a regioni e comuni.',
- '014': 'Infrastrutture e logistica: grandi opere, strade, ferrovie, porti e aeroporti.',
- '015': 'Comunicazioni: posta, telecomunicazioni e banda ultralarga.',
- '016': 'Commercio internazionale: promozione del made in Italy all\u2019estero e '
-        'internazionalizzazione delle imprese.',
- '017': 'Ricerca scientifica e tecnologica: enti di ricerca, spazio e programmi di '
-        'innovazione.',
- '018': 'Ambiente e territorio: sviluppo sostenibile, clima, aree protette e dissesto '
-        'idrogeologico.',
- '019': 'Casa: edilizia residenziale pubblica, recupero del patrimonio e sostegno '
-        'all\u2019abitare.',
- '020': 'Salute: il finanziamento del Servizio sanitario nazionale e i farmaci.',
- '021': 'Beni culturali: tutela, restauro e fruizione di musei, siti e paesaggio.',
- '022': 'Istruzione scolastica: scuole, docenti e diritto allo studio.',
- '023': 'Università: atenei, dottorati e formazione superiore.',
- '024': 'Diritti sociali e famiglia: trasferimenti assistenziali (verso INPS, in gran '
-        'parte), inclusione, disabilità e terzo settore.',
- '025': 'Previdenza: il concorso dello Stato al pagamento di pensioni e trattamenti '
-        'previdenziali.',
- '026': 'Politiche del lavoro: ammortizzatori sociali, incentivi all\u2019occupazione, '
-        'contrasto al lavoro nero.',
- '027': 'Immigrazione: accoglienza, richiedenti asilo, integrazione e garanzia dei diritti.',
- '028': 'Coesione: sviluppo del Mezzogiorno e riequilibrio territoriale, con fondi '
-        'nazionali ed europei.',
- '029': 'La gestione del bilancio e delle entrate: agenzie fiscali, tesoreria e — la '
-        'parte più pesante — restituzioni e rimborsi d\u2019imposta.',
- '030': 'Giovani e sport: politiche giovanili e sostegno allo sport, CONI in testa.',
- '031': 'Turismo: promozione del turismo e dei grandi eventi.',
- '032': 'Il funzionamento delle amministrazioni: personale, sedi, spese generali e '
-        'trattamenti di quiescenza dei dipendenti statali.',
- '033': 'Fondi da ripartire: accantonamenti non ancora assegnati, che si destinano '
-        'durante l\u2019anno.',
- '034': 'Debito pubblico: gli interessi e i rimborsi di capitale del debito accumulato. '
-        'È la missione più grossa del bilancio.',
+ '001': 'Gli organi costituzionali e di rilievo costituzionale: Presidenza '
+        'della Repubblica, Camera, Senato, Corte costituzionale, CSM e '
+        'Presidenza del Consiglio. Le dotazioni sono determinate in autonomia '
+        'dagli organi stessi, entro l’importo iscritto in bilancio.',
+ '002': 'Il funzionamento del Governo e delle strutture che lo supportano: '
+        'dipartimenti della Presidenza del Consiglio, uffici di diretta '
+        'collaborazione dei ministri, rappresentanza.',
+ '003': 'I rapporti finanziari fra Stato ed enti territoriali: il concorso alla '
+        'spesa sanitaria delle Regioni, le compartecipazioni al gettito '
+        'erariale, i fondi perequativi e le regolazioni contabili. È la '
+        'missione attraverso cui lo Stato finanzia buona parte della spesa che '
+        'poi Regioni e Comuni erogano.',
+ '004': 'L’Italia in Europa e nel mondo: il contributo al bilancio dell’Unione '
+        'europea — che ne è di gran lunga la componente maggiore — la rete '
+        'diplomatica, la cooperazione allo sviluppo e la politica economica '
+        'estera.',
+ '005': 'Difesa e sicurezza del territorio: forze armate, mantenimento delle '
+        'capacità operative, missioni internazionali, ammodernamento di mezzi e '
+        'infrastrutture.',
+ '006': 'Giustizia: magistratura e uffici giudiziari, avvocatura dello Stato, '
+        'amministrazione penitenziaria, giustizia minorile e di comunità, spese '
+        'di funzionamento dei processi.',
+ '007': 'Ordine pubblico e sicurezza: Polizia di Stato, Arma dei Carabinieri, '
+        'Guardia di finanza, sistema di informazione per la sicurezza, '
+        'contrasto alla criminalità organizzata.',
+ '008': 'Soccorso civile: previsione e prevenzione dei rischi, Corpo nazionale '
+        'dei vigili del fuoco, interventi nelle emergenze e ricostruzione post '
+        'calamità. È la missione la cui spesa varia di più da un anno '
+        'all’altro, perché segue gli eventi.',
+ '009': 'Agricoltura, politiche agroalimentari e pesca: sostegno ai redditi e '
+        'alle filiere, sviluppo rurale, controlli di qualità. Larga parte delle '
+        'risorse arriva dai fondi europei della politica agricola comune.',
+ '010': 'Energia e diversificazione delle fonti: sicurezza degli '
+        'approvvigionamenti, incentivi alle rinnovabili, misure di contenimento '
+        'dei prezzi. La spesa si è impennata nel 2022 con gli interventi contro '
+        'il caro energia ed è poi rientrata.',
+ '011': 'Competitività e sviluppo delle imprese: incentivi agli investimenti, '
+        'crediti d’imposta, sostegno all’innovazione e alle piccole e medie '
+        'imprese. Una quota rilevante è concessa per via fiscale, quindi '
+        'compare come minore entrata più che come spesa.',
+ '012': 'Regolazione dei mercati: le autorità e le agenzie che vigilano su '
+        'concorrenza, comunicazioni, energia, trasporti e servizi pubblici '
+        'locali.',
+ '013': 'Diritto alla mobilità e sviluppo dei sistemi di trasporto: contributi '
+        'di esercizio al trasporto pubblico locale e ferroviario, rinnovo del '
+        'materiale rotabile, continuità territoriale.',
+ '014': 'Infrastrutture pubbliche e logistica: rete stradale e autostradale, '
+        'ferrovie, porti, aeroporti, opere di rilevanza strategica. È spesa in '
+        'conto capitale, con tempi di realizzazione lunghi e scarti ampi fra '
+        'stanziamento e pagamento.',
+ '015': 'Comunicazioni: servizi postali, telecomunicazioni, banda ultralarga e '
+        'infrastrutture digitali, compresa la compensazione per il servizio '
+        'universale.',
+ '016': 'Commercio internazionale e internazionalizzazione: promozione del made '
+        'in Italy, sostegno all’export, assicurazione e finanziamento agevolato '
+        'delle operazioni con l’estero.',
+ '017': 'Ricerca e innovazione: enti pubblici di ricerca, programmi spaziali, '
+        'ricerca industriale, partecipazione ai programmi quadro europei.',
+ '018': 'Sviluppo sostenibile e tutela del territorio e dell’ambiente: '
+        'politiche per il clima, aree protette, ciclo dei rifiuti e delle '
+        'acque, difesa del suolo e dissesto idrogeologico.',
+ '019': 'Casa e assetto urbanistico: edilizia residenziale pubblica, recupero '
+        'del patrimonio abitativo, sostegno all’affitto, programmi di '
+        'rigenerazione urbana.',
+ '020': 'Tutela della salute: il finanziamento del Servizio sanitario '
+        'nazionale, la spesa farmaceutica, la prevenzione, la ricerca '
+        'sanitaria. La quasi totalità è trasferimento alle Regioni, non '
+        'erogazione diretta.',
+ '021': 'Tutela e valorizzazione dei beni culturali e paesaggistici: '
+        'soprintendenze, restauri, musei e siti statali, archivi e biblioteche.',
+ '022': 'Istruzione scolastica: personale docente e ausiliario, funzionamento '
+        'degli istituti di ogni ordine e grado, diritto allo studio, edilizia '
+        'scolastica. È dominata dal costo del personale.',
+ '023': 'Istruzione universitaria e formazione post-universitaria: '
+        'finanziamento ordinario degli atenei, dottorati, borse e diritto allo '
+        'studio universitario.',
+ '024': 'Diritti sociali, politiche sociali e famiglia: trasferimenti '
+        'assistenziali, in gran parte diretti all’INPS, che poi eroga le '
+        'prestazioni; sostegno alla natalità e ai servizi per l’infanzia, '
+        'interventi per la non autosufficienza e il terzo settore.',
+ '025': 'Politiche previdenziali: il concorso dello Stato al pagamento di '
+        'pensioni e trattamenti previdenziali. Non è la spesa pensionistica '
+        'complessiva, che è erogata dagli enti di previdenza: è la parte che il '
+        'bilancio statale mette per coprire la differenza fra contributi '
+        'incassati e prestazioni dovute.',
+ '026': 'Politiche per il lavoro: ammortizzatori sociali, integrazioni '
+        'salariali, incentivi all’occupazione, politiche attive e servizi per '
+        'l’impiego. La spesa è ciclica e cresce nelle fasi di crisi.',
+ '027': 'Immigrazione, accoglienza e garanzia dei diritti: sistema di prima e '
+        'seconda accoglienza, esame delle domande di protezione, rimpatri, '
+        'integrazione.',
+ '028': 'Sviluppo e riequilibrio territoriale: fondi per la coesione, programmi '
+        'per il Mezzogiorno, cofinanziamento nazionale dei fondi strutturali '
+        'europei. La spesa segue i cicli di programmazione pluriennale, quindi '
+        'si concentra in alcuni anni.',
+ '029': 'Politiche economico-finanziarie e di bilancio: agenzie fiscali, '
+        'riscossione, tesoreria, rapporti con il sistema finanziario. È la '
+        'missione più pesante del bilancio, perché comprende le regolazioni '
+        'contabili e i rimborsi d’imposta.',
+ '030': 'Giovani e sport: politiche giovanili, servizio civile universale, '
+        'sostegno all’attività sportiva e agli organismi del settore, '
+        'impiantistica.',
+ '031': 'Turismo: promozione dell’immagine turistica del paese, sostegno alle '
+        'imprese del settore, grandi eventi.',
+ '032': 'Servizi istituzionali e generali delle amministrazioni pubbliche: '
+        'personale, sedi, spese generali di funzionamento e trattamenti di '
+        'quiescenza dei dipendenti statali. È spesa trasversale, presente nel '
+        'bilancio di ogni ministero.',
+ '033': 'Fondi da ripartire: accantonamenti iscritti in bilancio ma non ancora '
+        'assegnati a una finalità precisa, che vengono destinati in corso '
+        'd’anno con provvedimenti successivi. Un importo elevato qui indica '
+        'decisioni di spesa rinviate, non spesa già orientata.',
+ '034': 'Debito pubblico: interessi sui titoli di Stato e rimborsi di capitale '
+        'alle scadenze. È la missione più grossa del bilancio, ma i due flussi '
+        'hanno natura diversa: gli interessi sono un costo, il rimborso del '
+        'capitale è la restituzione di somme prese a prestito, che i conti '
+        'nazionali non considerano spesa.',
 }
 
 DESCR_GRUPPO_COFOG = {
- '01.01': 'Presidenza, Parlamento e gestione della finanza pubblica, incluse le pensioni dei dipendenti statali.',
- '01.02': 'Contributi alle organizzazioni internazionali e aiuti ai paesi in sviluppo.',
- '01.03': 'Personale, sedi e servizi amministrativi trasversali.',
- '01.04': 'Ricerca di base, senza applicazione immediata.',
- '01.05': 'Ricerca e sviluppo per i servizi pubblici generali.',
- '01.06': 'Spese generali non riconducibili ad alcun altro gruppo.',
- '01.07': 'La voce più grossa dell\u2019intera spesa: interessi e ammortamento del debito.',
- '01.08': 'Trasferimenti a Regioni, Comuni ed enti territoriali: in testa il finanziamento della sanità.',
- '02.01': 'Le forze armate e le loro operazioni.',
- '02.02': 'Protezione della popolazione: in Italia, la protezione civile.',
- '02.03': 'Aiuti militari ad altri paesi.',
- '02.04': 'Ricerca e sviluppo per la difesa.',
- '02.05': 'Spese di difesa non riconducibili ad altro.',
- '03.01': 'Le polizie.',
- '03.02': 'I vigili del fuoco.',
- '03.03': 'I tribunali.',
- '03.04': 'Le carceri.',
- '03.06': 'Spese di ordine pubblico non riconducibili ad altro.',
- '04.01': 'Politiche economiche generali, commercio e lavoro.',
- '04.02': 'Agricoltura, foreste, pesca e caccia.',
- '04.03': 'Combustibili ed energia.',
- '04.04': 'Attività estrattive, manifatturiere ed edilizia.',
- '04.05': 'Trasporti di ogni tipo.',
- '04.06': 'Comunicazioni: posta e telecomunicazioni.',
- '04.07': 'Sostegno ad altri settori produttivi, turismo incluso.',
- '04.08': 'Ricerca e sviluppo per l\u2019economia.',
- '04.09': 'Spese economiche non riconducibili ad altro.',
- '05.01': 'Trattamento dei rifiuti.',
- '05.02': 'Trattamento delle acque reflue.',
- '05.03': 'Riduzione dell\u2019inquinamento.',
- '05.04': 'Protezione della biodiversità e del paesaggio.',
- '05.05': 'Ricerca e sviluppo per l\u2019ambiente.',
- '05.06': 'Spese ambientali non riconducibili ad altro.',
- '06.01': 'Sviluppo delle abitazioni.',
- '06.02': 'Assetto territoriale e urbanistica.',
- '06.03': 'Approvvigionamento idrico.',
- '06.06': 'Spese per l\u2019abitare non riconducibili ad altro.',
- '07.01': 'Farmaci, prodotti e attrezzature sanitarie.',
- '07.02': 'Servizi sanitari non ospedalieri: distretti e medicina generale.',
- '07.03': 'Servizi ospedalieri.',
- '07.04': 'Sanità pubblica: prevenzione, profilassi, vigilanza.',
- '07.05': 'Ricerca e sviluppo per la sanità.',
- '07.06': 'Spese sanitarie non riconducibili ad altro.',
- '08.01': 'Attività ricreative e sport.',
- '08.02': 'Attività culturali: musei, biblioteche, archivi, spettacolo.',
- '08.03': 'Radiotelevisione pubblica ed editoria.',
- '08.04': 'Servizi di culto e per le comunità, incluse le intese con le confessioni religiose.',
- '08.05': 'Ricerca e sviluppo per cultura e tempo libero.',
- '08.06': 'Spese culturali non riconducibili ad altro.',
- '09.01': 'Istruzione prescolastica e primaria.',
- '09.02': 'Istruzione secondaria.',
- '09.03': 'Istruzione post-secondaria non superiore.',
- '09.04': 'Istruzione universitaria.',
- '09.05': 'Istruzione di altro tipo, formazione professionale inclusa.',
- '09.06': 'Servizi ausiliari all\u2019istruzione: trasporti scolastici, mense, orientamento.',
- '09.07': 'Ricerca e sviluppo per l\u2019istruzione.',
- '09.08': 'Spese per l\u2019istruzione non riconducibili ad altro.',
- '10.01': 'Pensioni e sostegno per malattia e invalidità.',
- '10.02': 'Pensioni di vecchiaia: la previdenza.',
- '10.03': 'Pensioni ai superstiti.',
- '10.04': 'Sostegno alle famiglie e alla natalità.',
- '10.05': 'Sostegno alla disoccupazione.',
- '10.06': 'Sostegno all\u2019abitare per le fasce deboli.',
- '10.07': 'Esclusione sociale non riconducibile ad altro.',
- '10.08': 'Ricerca e sviluppo per la protezione sociale.',
- '10.09': 'Altre spese di protezione sociale.',
+ '01.01': 'Presidenza della Repubblica, Parlamento, Governo, organi di rilievo '
+          'costituzionale, amministrazione finanziaria e rete diplomatica. Vi '
+          'rientrano la gestione del bilancio pubblico, la riscossione dei '
+          'tributi e i rapporti con l’estero, incluse le pensioni del personale '
+          'di queste amministrazioni.',
+ '01.02': 'Contributi alle organizzazioni internazionali e aiuto pubblico allo '
+          'sviluppo: cooperazione bilaterale e multilaterale, contributi a '
+          'banche e fondi di sviluppo, interventi umanitari. Non comprende la '
+          'contribuzione al bilancio dell’Unione europea, classificata fra i '
+          'servizi generali.',
+ '01.03': 'Servizi trasversali che non appartengono a una politica specifica: '
+          'gestione del personale pubblico, sedi e patrimonio immobiliare, '
+          'servizi informatici e statistici comuni, approvvigionamenti '
+          'centralizzati. È spesa di funzionamento della macchina, non di '
+          'erogazione di un servizio al cittadino.',
+ '01.04': 'Ricerca senza un’applicazione pratica immediata, finanziata perché '
+          'accresce la conoscenza disponibile: enti di ricerca nazionali, '
+          'programmi spaziali, grandi infrastrutture scientifiche, quota di '
+          'ricerca degli atenei non riconducibile alla didattica.',
+ '01.05': 'Ricerca e sviluppo applicati al funzionamento dell’amministrazione: '
+          'metodi di gestione, sistemi informativi, statistica ufficiale. Voce '
+          'di importo contenuto.',
+ '01.06': 'Spese di carattere generale che non trovano collocazione negli altri '
+          'gruppi della divisione, comprese alcune poste di regolazione '
+          'contabile. Voce residuale: un importo elevato qui è di norma il '
+          'segnale di una classificazione ancora da affinare.',
+ '01.07': 'Interessi e ammortamento del debito pubblico: le cedole dei titoli '
+          'di Stato e i rimborsi di capitale alle scadenze. Nel bilancio dello '
+          'Stato i due flussi stanno insieme, ed è la ragione per cui questa è '
+          'la voce singola più pesante del rendiconto. Nei conti nazionali il '
+          'rimborso del capitale non è una spesa ma un’operazione finanziaria: '
+          'lì la stessa funzione vale molto meno.',
+ '01.08': 'Trasferimenti a Regioni, Comuni ed enti territoriali, con in testa '
+          'il finanziamento del Servizio sanitario nazionale. Nel bilancio '
+          'dello Stato compaiono per intero come spesa; nei conti nazionali '
+          'consolidati sono attribuiti a chi li spende davvero, quindi lì '
+          'questa voce è molto più piccola e la sanità compare sotto la propria '
+          'funzione.',
+ '02.01': 'Le forze armate: personale militare e civile, addestramento, '
+          'esercizi, mezzi e armamenti, missioni internazionali. Le '
+          'retribuzioni ne assorbono la parte prevalente, molto più degli '
+          'investimenti in equipaggiamento.',
+ '02.02': 'Protezione della popolazione civile in caso di calamità: '
+          'pianificazione, scorte, addestramento e organizzazione degli '
+          'interventi. In Italia coincide in buona parte con il sistema di '
+          'protezione civile, la cui spesa cresce bruscamente negli anni '
+          'segnati da eventi eccezionali.',
+ '02.03': 'Aiuti militari a paesi terzi e a organizzazioni internazionali: '
+          'cessione di equipaggiamenti, addestramento, contributi a missioni. '
+          'Voce di importo variabile, legata al quadro internazionale.',
+ '02.04': 'Ricerca e sviluppo applicati alla difesa: programmi di ricerca '
+          'militare, sviluppo di sistemi d’arma, tecnologie duali.',
+ '02.05': 'Spese di difesa che non rientrano negli altri gruppi della '
+          'divisione, comprese amministrazione e regolazione del settore. Voce '
+          'residuale.',
+ '03.01': 'Polizia di Stato, Arma dei Carabinieri, Guardia di finanza, polizia '
+          'penitenziaria e polizie locali: personale, mezzi, sedi e '
+          'addestramento. È il gruppo più pesante della divisione ed è dominato '
+          'dal costo del personale.',
+ '03.02': 'Il servizio antincendio e di soccorso tecnico urgente: Corpo '
+          'nazionale dei vigili del fuoco, mezzi, presidi territoriali e '
+          'formazione.',
+ '03.03': 'Il sistema giudiziario: magistratura ordinaria, amministrativa e '
+          'contabile, uffici giudiziari, avvocatura dello Stato, spese di '
+          'giustizia e patrocinio a spese dello Stato. La cifra misura il costo '
+          'del servizio, non la sua efficienza.',
+ '03.04': 'Istituti penitenziari per adulti e minori: personale, gestione '
+          'quotidiana, edilizia carceraria, misure alternative alla detenzione.',
+ '03.05': 'Ricerca e sviluppo applicati alla sicurezza e alla giustizia: '
+          'tecnologie investigative, sistemi informativi, medicina legale. Voce '
+          'di importo marginale.',
+ '03.06': 'Spese di ordine pubblico e sicurezza che non rientrano negli altri '
+          'gruppi, comprese amministrazione generale e coordinamento della '
+          'divisione.',
+ '04.01': 'Politiche economiche di carattere generale e politiche del lavoro: '
+          'incentivi all’occupazione, formazione professionale, servizi per '
+          'l’impiego, regolazione del commercio e tutela della concorrenza. Vi '
+          'rientrano anche gli sgravi contributivi decisi per sostenere le '
+          'assunzioni.',
+ '04.02': 'Agricoltura, silvicoltura, pesca e caccia: sostegno ai redditi '
+          'agricoli, sviluppo rurale, bonifiche e irrigazione, gestione '
+          'forestale. È finanziata in larga parte da fondi europei della '
+          'politica agricola comune, che transitano dal bilancio nazionale.',
+ '04.03': 'Combustibili ed energia: sostegno alla produzione e alla '
+          'distribuzione, sicurezza degli approvvigionamenti, incentivi alle '
+          'fonti rinnovabili, misure di calmieramento dei prezzi. È la voce che '
+          'si è gonfiata nel 2022 con gli interventi contro il caro energia.',
+ '04.04': 'Attività estrattive, manifatturiere ed edilizia: incentivi agli '
+          'investimenti delle imprese, crediti d’imposta per beni strumentali e '
+          'per la ricerca, politiche industriali e di reindustrializzazione. '
+          'Comprende buona parte delle agevolazioni concesse per via fiscale.',
+ '04.05': 'Trasporti di ogni modalità: rete stradale e autostradale, ferrovie, '
+          'porti, aeroporti, trasporto pubblico locale. Vi rientrano sia gli '
+          'investimenti infrastrutturali sia i contributi di esercizio ai '
+          'gestori del servizio. È il gruppo più grosso della divisione.',
+ '04.06': 'Comunicazioni: servizi postali, telecomunicazioni, banda larga e '
+          'infrastrutture digitali, comprese le compensazioni per il servizio '
+          'universale.',
+ '04.07': 'Altri settori produttivi non classificati altrove, in particolare '
+          'turismo, commercio e servizi. Comprende gli interventi di sostegno '
+          'alla ricettività e alla promozione.',
+ '04.08': 'Ricerca e sviluppo applicati alle attività economiche: programmi di '
+          'innovazione industriale, agricola, energetica e dei trasporti, '
+          'spesso cofinanziati con fondi europei.',
+ '04.09': 'Spese economiche che non rientrano negli altri gruppi della '
+          'divisione, comprese amministrazione e vigilanza sui settori. Voce '
+          'residuale, che può accogliere interventi straordinari non ancora '
+          'riclassificati.',
+ '05.01': 'Raccolta, trasporto, trattamento e smaltimento dei rifiuti urbani e '
+          'speciali, compresi impianti e discariche. È spesa quasi interamente '
+          'comunale, finanziata in larga parte dalla tariffa sui rifiuti.',
+ '05.02': 'Reti fognarie e impianti di depurazione delle acque reflue: '
+          'costruzione, gestione e manutenzione. Voce a lungo sotto-finanziata '
+          'in Italia, all’origine di procedure di infrazione europee.',
+ '05.03': 'Riduzione dell’inquinamento di aria, acqua e suolo: monitoraggio '
+          'ambientale, bonifica dei siti contaminati, contenimento delle '
+          'emissioni e del rumore.',
+ '05.04': 'Protezione della biodiversità e del paesaggio: parchi e aree '
+          'protette, tutela di flora e fauna, difesa del suolo e del patrimonio '
+          'paesaggistico.',
+ '05.05': 'Ricerca e sviluppo in campo ambientale: studi su clima, ecosistemi, '
+          'tecnologie di depurazione e riciclo.',
+ '05.06': 'Spese ambientali che non rientrano negli altri gruppi, comprese '
+          'amministrazione e regolazione della materia.',
+ '06.01': 'Edilizia residenziale pubblica e sostegno all’abitazione: '
+          'costruzione e manutenzione di alloggi popolari, programmi di '
+          'recupero, agevolazioni all’acquisto e alla ristrutturazione. Dal '
+          '2021 vi confluiscono i crediti d’imposta per la riqualificazione '
+          'edilizia, che ne hanno moltiplicato l’importo per alcuni anni.',
+ '06.02': 'Sviluppo e assetto del territorio: pianificazione urbanistica, opere '
+          'di urbanizzazione, riqualificazione di aree urbane e programmi di '
+          'rigenerazione.',
+ '06.03': 'Approvvigionamento idrico a uso civile: captazione, potabilizzazione '
+          'e distribuzione dell’acqua, reti e serbatoi. In larga parte spesa di '
+          'enti locali e gestori pubblici del servizio.',
+ '06.04': 'Illuminazione di strade e spazi pubblici: impianti, consumi ed '
+          'efficientamento. Voce interamente comunale.',
+ '06.05': 'Ricerca e sviluppo su abitazioni e assetto del territorio: tecniche '
+          'costruttive, efficienza energetica degli edifici, pianificazione '
+          'urbana.',
+ '06.06': 'Spese per abitazioni e territorio che non rientrano negli altri '
+          'gruppi della divisione. Voce residuale.',
+ '07.01': 'Farmaci, dispositivi medici, protesi e apparecchiature sanitarie '
+          'erogati agli assistiti, compresa l’assistenza farmaceutica '
+          'convenzionata attraverso le farmacie. La spesa è governata da tetti '
+          'programmati e da meccanismi di ripiano a carico delle aziende '
+          'farmaceutiche.',
+ '07.02': 'Assistenza sanitaria fuori dall’ospedale: medicina generale e '
+          'pediatria di libera scelta, specialistica ambulatoriale, diagnostica '
+          'e riabilitazione, sia in strutture pubbliche sia in strutture '
+          'private accreditate. È il perno della sanità territoriale.',
+ '07.03': 'Assistenza ospedaliera: ricoveri ordinari e day hospital, pronto '
+          'soccorso, chirurgia, terapie intensive, in ospedali pubblici e case '
+          'di cura accreditate. È il gruppo più pesante della sanità, ed è '
+          'quasi interamente spesa delle amministrazioni locali.',
+ '07.04': 'Prevenzione e sanità pubblica: vaccinazioni, screening, igiene degli '
+          'alimenti e dei luoghi di lavoro, veterinaria, sorveglianza '
+          'epidemiologica. È una quota storicamente piccola della spesa '
+          'sanitaria, cresciuta bruscamente negli anni della pandemia.',
+ '07.05': 'Ricerca e sviluppo in campo sanitario: ricerca corrente e '
+          'finalizzata degli istituti di ricovero e cura a carattere '
+          'scientifico, programmi dell’Istituto superiore di sanità.',
+ '07.06': 'Spese sanitarie che non rientrano negli altri gruppi, comprese '
+          'amministrazione e programmazione del servizio sanitario.',
+ '08.01': 'Impianti sportivi, parchi e verde attrezzato, sostegno alle società '
+          'e alle federazioni sportive, manifestazioni. In larga parte spesa '
+          'comunale.',
+ '08.02': 'Musei, biblioteche, archivi, siti archeologici e monumenti, teatro, '
+          'musica e cinema: gestione, tutela, restauro e sostegno alla '
+          'produzione culturale, compreso il fondo per lo spettacolo.',
+ '08.03': 'Servizio pubblico radiotelevisivo ed editoria: trasferimenti al '
+          'concessionario del servizio pubblico, sostegno all’editoria e alle '
+          'emittenti locali. Il canone corrispondente è registrato fra le '
+          'entrate tributarie.',
+ '08.04': 'Servizi religiosi e altri servizi resi alla comunità: intese con le '
+          'confessioni religiose, quota dell’otto per mille di competenza '
+          'pubblica, servizi cimiteriali.',
+ '08.05': 'Ricerca e sviluppo su cultura, sport e tempo libero. Voce di importo '
+          'marginale.',
+ '08.06': 'Spese culturali e ricreative che non rientrano negli altri gruppi, '
+          'comprese amministrazione e regolazione del settore.',
+ '09.01': 'Scuola dell’infanzia e scuola primaria: retribuzioni del personale '
+          'docente e ausiliario, funzionamento degli istituti, edilizia '
+          'scolastica. Il costo del personale ne determina quasi interamente '
+          'l’andamento.',
+ '09.02': 'Scuola secondaria di primo e secondo grado, licei, istituti tecnici '
+          'e professionali: personale, funzionamento, laboratori ed edilizia. È '
+          'il gruppo più grosso dell’istruzione.',
+ '09.03': 'Istruzione post-secondaria non universitaria: istituti tecnici '
+          'superiori, formazione terziaria professionalizzante, percorsi di '
+          'specializzazione tecnica.',
+ '09.04': 'Università e alta formazione: finanziamento ordinario degli atenei, '
+          'diritto allo studio, borse e dottorati, edilizia universitaria. La '
+          'ricerca degli atenei non riconducibile alla didattica è classificata '
+          'come ricerca di base, in un’altra divisione.',
+ '09.05': 'Istruzione non attribuibile a uno specifico livello: formazione '
+          'professionale regionale, educazione degli adulti, apprendimento '
+          'permanente.',
+ '09.06': 'Servizi ausiliari all’istruzione: trasporto scolastico, mense, '
+          'convitti, materiale didattico, orientamento e sostegno agli '
+          'studenti. In larga parte spesa di Comuni e Regioni.',
+ '09.07': 'Ricerca e sviluppo sui metodi e sulle politiche dell’istruzione: '
+          'valutazione dei sistemi scolastici, sperimentazione didattica.',
+ '09.08': 'Spese per l’istruzione che non rientrano negli altri gruppi, '
+          'comprese amministrazione e vigilanza sul sistema scolastico.',
+ '10.01': 'Prestazioni per malattia, infortunio e invalidità: pensioni di '
+          'inabilità e assegni di invalidità, indennità di malattia e '
+          'infortunio, provvidenze per la disabilità, assistenza domiciliare e '
+          'residenziale alle persone non autosufficienti.',
+ '10.02': 'Le pensioni di vecchiaia e anticipate erogate dalla previdenza '
+          'obbligatoria: l’INPS per la parte prevalente, più le casse dei '
+          'liberi professionisti. È la singola voce più rilevante dell’intero '
+          'bilancio pubblico. Il sistema è a ripartizione: i contributi versati '
+          'da chi lavora oggi pagano le pensioni di chi è già in quiescenza, '
+          'quindi la spesa dipende dal rapporto fra le due popolazioni prima '
+          'ancora che dalle regole di calcolo. Le riforme del 1995 e del 2011 '
+          'hanno legato l’assegno ai contributi effettivamente versati e '
+          'all’età di uscita, ma si applicano per quote crescenti alle pensioni '
+          'nuove: gli effetti sulla spesa si distribuiscono su decenni.',
+ '10.03': 'Pensioni ai superstiti, cioè le prestazioni di reversibilità e '
+          'indirette riconosciute a coniugi, figli e altri familiari del '
+          'titolare defunto. La spesa segue con ritardo la dinamica delle '
+          'pensioni dirette e la struttura demografica.',
+ '10.04': 'Sostegno alle famiglie e alla natalità: assegno unico e universale '
+          'per i figli, congedi parentali, servizi per la prima infanzia, '
+          'prestazioni per maternità. In Italia è una quota della protezione '
+          'sociale storicamente più bassa della media europea.',
+ '10.05': 'Sostegno al reddito in caso di perdita del lavoro: indennità di '
+          'disoccupazione, integrazioni salariali, indennità per i lavoratori '
+          'autonomi, politiche passive del lavoro. La spesa è fortemente '
+          'ciclica e sale nelle fasi di recessione.',
+ '10.06': 'Sostegno all’abitare per le famiglie a basso reddito: contributi '
+          'all’affitto, canoni agevolati, alloggi sociali. È una voce di '
+          'importo modesto nel confronto europeo, perché in Italia il sostegno '
+          'alla casa passa più dalle agevolazioni fiscali, che non compaiono '
+          'qui, che dalla spesa diretta.',
+ '10.07': 'Contrasto alla povertà e all’esclusione sociale: misure di reddito '
+          'minimo, sostegno alle persone senza dimora, interventi dei servizi '
+          'sociali comunali, prestazioni assistenziali non collegate a '
+          'contributi versati.',
+ '10.08': 'Ricerca e sviluppo sui sistemi di protezione sociale: studi '
+          'previsionali su previdenza, povertà e non autosufficienza. Voce di '
+          'importo marginale.',
+ '10.09': 'Prestazioni e servizi di protezione sociale che non rientrano negli '
+          'altri gruppi, compresi amministrazione e funzionamento degli enti '
+          'previdenziali e assistenziali.',
 }
 
 # ── costruzione dell'albero ──────────────────────────────────
@@ -579,6 +884,10 @@ def spoglia(nodi):
 
 # ── impaginazione e scrittura ────────────────────────────────
 
+AVVISO = ('Il perimetro è il solo Stato centrale, non la spesa pubblica italiana: '
+          'la sanità erogata dalle Regioni, i servizi dei Comuni e le prestazioni '
+          'di INPS e INAIL restano in gran parte fuori.')
+
 def impagina(el, anni, totali, anni_previsione):
     ANNO = el['anno']
     TOT = int(round(el['tot']))
@@ -590,25 +899,25 @@ def impagina(el, anni, totali, anni_previsione):
         titolo = 'La spesa prevista dello Stato nel %s' % ANNO
         titolo_display = {'prima': 'La spesa', 'corsivo': 'dello Stato',
                           'dopo': 'prevista nel %s' % ANNO}
-        sottotitolo = ('Quanto lo Stato italiano è autorizzato a spendere nel %s, '
-                       'in stanziamenti di competenza: autorizzazioni, non impegni '
-                       'e non pagamenti. Si può confrontare voce per voce con la '
-                       'spesa impegnata degli anni prima.' % ANNO)
-        apertura = ('Questa non è spesa, e non è ancora un impegno: è la spesa '
-                    'autorizzata dalla legge di bilancio per il %s. Le cifre '
-                    'diventano impegni quando le amministrazioni assumono le '
-                    'obbligazioni, e pagamenti quando il denaro esce davvero. '
-                    'Qui sotto puoi aprirla e confrontarla con il consuntivo '
-                    'degli anni precedenti.' % ANNO)
+        sottotitolo = ('Quanto lo Stato è autorizzato a spendere nel %s: '
+                       'stanziamenti di competenza, cioè autorizzazioni, non '
+                       'impegni né pagamenti. Il confronto con la spesa impegnata '
+                       'degli anni precedenti è possibile voce per voce, ma mette a '
+                       'fianco due misure diverse.' % ANNO)
+        apertura = ('Non è spesa e non è ancora un impegno: è quanto la legge di '
+                    'bilancio autorizza a spendere nel %s. Diventa impegno quando '
+                    'l\u2019amministrazione assume l\u2019obbligazione, e pagamento quando '
+                    'il denaro esce effettivamente. ' % ANNO) + AVVISO
         fonte_nome = ("Legge di bilancio per l'anno %s, dati aperti della Ragioneria "
                       'generale dello Stato (OpenBDAP), licenza CC BY.' % ANNO)
         nota_metodo = ('Gli importi del %s sono stanziamenti di competenza della '
-                       'legge di bilancio: autorizzazioni di spesa. Negli anni '
+                       'legge di bilancio, cioè autorizzazioni di spesa. Negli anni '
                        'precedenti la spesa è misurata dagli impegni del rendiconto, '
-                       'che sono obbligazioni già assunte: il confronto dice quanto '
-                       'è previsto in più o in meno, non quanto è stato speso in più. '
-                       'La classificazione per finalità (COFOG) esiste solo nel '
-                       'rendiconto: per il %s non è ancora disponibile.' % (ANNO, ANNO))
+                       'che sono obbligazioni già assunte: il confronto indica '
+                       'quanto è autorizzato in più o in meno, non quanto si è speso '
+                       'in più. La classificazione per finalità (COFOG) esiste solo '
+                       'nel rendiconto e per il %s non è quindi disponibile.'
+                       % (ANNO, ANNO))
         come_leggere = ('Gli importi sono stanziamenti: autorizzazioni di spesa, '
                         'non impegni né pagamenti. Se una voce indica 12%, prende il '
                         '12% della voce che la contiene al livello superiore, non '
@@ -617,51 +926,54 @@ def impagina(el, anni, totali, anni_previsione):
         titolo = 'La spesa dello Stato nel %s' % ANNO
         titolo_display = {'prima': 'La spesa', 'corsivo': 'dello Stato', 'dopo': 'nel %s' % ANNO}
         if MISURA == 'impegnato':
-            sottotitolo = ('Quanto lo Stato italiano ha impegnato nel %s: obbligazioni '
-                           'di spesa assunte nell\u2019anno, non pagamenti. Puoi leggere '
-                           'la stessa cifra per amministrazione o per finalità.' % ANNO)
-            testo_misura = ('Gli importi sono impegni di competenza dell\'esercizio %s: '
-                            'obbligazioni che l\'amministrazione ha assunto nell\'anno. '
-                            'Non sono previsioni, e non sono ancora pagamenti: quelli sono '
-                            'in cassa e seguono altri tempi.' % ANNO)
-            come_leggere = ('Gli importi sono impegni: obbligazioni di spesa assunte, '
-                            'non pagamenti. Se una voce indica 12%, prende il 12% '
-                            'della voce che la contiene al livello superiore, non '
-                            'della spesa totale.')
+            sottotitolo = ('Quanto lo Stato italiano ha impegnato nel %s: '
+                           'obbligazioni di spesa assunte nell\u2019anno, non '
+                           'pagamenti. La stessa cifra si può leggere per '
+                           'amministrazione o per finalità.' % ANNO)
+            testo_misura = ('Gli importi sono impegni di competenza dell\'esercizio '
+                            '%s: obbligazioni assunte dall\'amministrazione '
+                            'nell\'anno. Non sono previsioni e non sono pagamenti, '
+                            'che seguono la gestione di cassa e altri tempi.' % ANNO)
+            come_leggere = ('Gli importi sono impegni: obbligazioni assunte, non '
+                            'pagamenti. Le percentuali sono riferite alla voce che '
+                            'contiene, non al totale generale: 12% significa il 12% '
+                            'del livello superiore.')
         else:
             # MISURA=pagato|definitivo: cambia la natura dei numeri,
             # e le formule sopra non varrebbero
             sottotitolo = ('Quanto lo Stato italiano ha messo in spesa nel %s, '
-                           'in %s. Puoi leggere la stessa cifra per amministrazione '
-                           'o per finalità.' % (ANNO, nome_misura))
+                           'in %s. Puoi leggere la stessa cifra per '
+                           'amministrazione o per finalità.' % (ANNO, nome_misura))
             testo_misura = ('Gli importi sono %s di competenza dell\'esercizio %s.'
                             % (nome_misura, ANNO))
             come_leggere = ('Gli importi sono %s. Se una voce indica 12%, prende il '
                             '12% della voce che la contiene al livello superiore, '
                             'non della spesa totale.' % nome_misura)
-        apertura = ('Non è una previsione: è il consuntivo in competenza, chiuso a '
-                    'fine %s, presentato al Parlamento e giudicato dalla Corte dei '
-                    'conti l\u2019anno dopo. Qui sotto puoi aprirlo: ogni volta che '
-                    'scegli una voce, la barra si ridisegna su quella voce e ti '
-                    'mostra come è fatta dentro.' % ANNO)
+        apertura = ('È il consuntivo in competenza, chiuso a fine %s e giudicato '
+                    'dalla Corte dei conti l\u2019anno successivo. Scegli una voce e '
+                    'la barra si ridisegna su quella, scomponendola nelle sue '
+                    'parti. ' % ANNO) + AVVISO
         fonte_nome = ('Rendiconto generale dello Stato per l\'esercizio finanziario %s, '
                       'dati aperti della Ragioneria generale dello Stato (OpenBDAP), '
                       'licenza CC BY.' % ANNO)
-        nota_metodo = (testo_misura + ' Un capitolo può servire più '
-                       'finalità: nella vista per finalità è ripartito secondo le '
-                       'percentuali COFOG indicate dalla Ragioneria, e i due totali '
-                       'coincidono. Gli andamenti storici seguono le voci attraverso '
-                       'i codici: se un ministero cambia nome, la sua storia continua; '
-                       'le voci assenti in un anno lasciano un vuoto.')
+        nota_metodo = (testo_misura + ' Un capitolo può servire più finalità: '
+                       'nella vista per finalità è ripartito secondo le percentuali '
+                       'COFOG indicate dalla Ragioneria, e i due totali coincidono '
+                       'al centesimo. Gli andamenti storici seguono le voci '
+                       'attraverso i codici, non attraverso i nomi: se un ministero '
+                       'cambia denominazione la sua storia continua, e le voci '
+                       'assenti in un anno lasciano un vuoto invece di una stima.')
 
     sezioni = [
         {'id': 'chi', 'nome': 'Chi spende', 'etichetta': 'Chi spende',
          'titolo': 'La spesa %s per amministrazione' % ANNO, 'importo': TOT,
-         'descrizione': 'La stessa cifra della pagina, vista per chi la gestisce: '
-                        'ogni ministero, le sue missioni, i loro programmi. Per '
-                        'capire a che cosa servono i soldi, passa alla vista '
-                        '«A cosa serve».'
-                        + (' Per il %s quella vista non è ancora disponibile.'
+         'descrizione': 'La stessa cifra ripartita per amministrazione titolare: '
+                        'ogni ministero, le sue missioni, i loro programmi. '
+                        'Gestire non equivale a decidere: dal Ministero '
+                        'dell\u2019economia transita anche spesa decisa altrove. Per '
+                        'la destinazione dei fondi si veda «A cosa serve».'
+                        + (' Per il %s non è disponibile: la classificazione per '
+                           'finalità esiste solo nel rendiconto.'
                            % ANNO if previsione else ''),
          'figli': el['chi']},
     ]
@@ -669,10 +981,11 @@ def impagina(el, anni, totali, anni_previsione):
         sezioni.append(
             {'id': 'cosa', 'nome': 'A cosa serve', 'etichetta': 'A cosa serve',
              'titolo': 'La spesa %s per finalità' % ANNO, 'importo': TOT,
-             'descrizione': 'La stessa spesa, raggruppata per scopo con la '
+             'descrizione': 'La stessa spesa raggruppata per scopo con la '
                             'classificazione COFOG delle Nazioni Unite, '
-                            'indipendentemente da chi la gestisce: «Difesa» somma '
-                            'tutto ciò che serve a difendere il paese, chiunque lo faccia.',
+                            'indipendentemente dall\u2019amministrazione titolare: '
+                            'sotto «Difesa» confluisce tutto ciò che serve a '
+                            'difendere il paese, da qualunque ministero transiti.',
              'figli': el['cosa']})
 
     return {
@@ -696,6 +1009,18 @@ def impagina(el, anni, totali, anni_previsione):
                       'https://bdap-opendata.rgs.mef.gov.it/content/'
                       '%d-rendiconto-pubblicato-triennio-g8-od-action-plan-capitolo' % ANNO),
         'nota_metodo': nota_metodo,
+        'portale': {'nome': 'OpenBDAP',
+                    'url': 'https://bdap-opendata.rgs.mef.gov.it/'},
+        'fonte_link_testo': 'Apri il dataset sul portale OpenBDAP',
+        'descrizioni': ('Le descrizioni delle voci sono sintesi redazionali di '
+                        'testi ufficiali: le competenze dei ministeri '
+                        '(D.Lgs. 300/1999 e riordini successivi), la struttura '
+                        'del bilancio per missioni e programmi (L. 196/2016) e '
+                        'la classificazione COFOG delle Nazioni Unite.'),
+        'vista_nota': ('Il perimetro è il solo Stato centrale, ma con il dettaglio '
+                       'per capitolo: ministeri, missioni, programmi. Rendiconto e '
+                       'legge di bilancio dal %d al %d, dati della Ragioneria '
+                       'generale dello Stato.' % (anni[0], anni[-1])),
       },
       'sezioni': sezioni,
     }
@@ -767,4 +1092,6 @@ def main():
         piene = sum(1 for s in stor.values() if sum(1 for v in s.values() if v) >= 2)
         print('Voci "%s" con storia di almeno 2 anni: %d su %d' % (nome, piene, len(stor)))
 
-main()
+
+if __name__ == '__main__':
+    main()

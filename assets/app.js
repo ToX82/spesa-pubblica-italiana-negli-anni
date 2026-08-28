@@ -1,9 +1,25 @@
 /* =========================================================
-   Bilancio di previsione 2026 — Presidenza del Consiglio
+   Dove vanno i soldi — due viste sulla stessa domanda:
+   il bilancio dello Stato e la spesa di tutte le
+   amministrazioni pubbliche.
    Nessuna dipendenza, nessuna compilazione.
    ========================================================= */
 (function () {
   'use strict';
+
+  // Le due viste del sito. Cambiano solo i file di dati: la pagina,
+  // i comportamenti e i testi vengono tutti dal JSON caricato.
+  var VISTE = {
+    pa:    { prefisso: 'pa',   nome: 'Tutta la spesa pubblica' },
+    stato: { prefisso: 'data', nome: 'Il bilancio dello Stato' }
+  };
+  var PREDEFINITA = 'pa';   // senza ?vista= si apre la spesa pubblica
+  var VISTA = (location.search.match(/[?&]vista=([a-z]+)/) || [])[1];
+  if (!VISTE[VISTA]) VISTA = PREDEFINITA;
+
+  function param(nome) {
+    return (location.search.match(new RegExp('[?&]' + nome + '=([\\w-]+)')) || [])[1] || '';
+  }
 
   var COLORI = ['--c1', '--c2', '--c3', '--c4', '--c5', '--c6', '--c7', '--c8',
                 '--c9', '--c10', '--c11', '--c12', '--c13'];
@@ -16,18 +32,29 @@
   }
 
   var dom = {};
-  ['occhiello', 'sommario', 'cifra-totale', 'cifra-nota', 'briciole', 'barra',
-   'barra-legenda', 'contesto', 'contesto-fetta', 'contesto-testo', 'contesto-grafico',
+  ['sommario', 'cifra-totale', 'cifra-nota', 'briciole', 'barra',
+   'barra-legenda', 'contesto', 'contesto-grafico', 'contesto-parole',
+   'contesto-andamento', 'contesto-griglia', 'voce-testata', 'voce-titolo', 'testata-cifre',
    'nota-voce', 'voci', 'vuoto', 'fonte-nome', 'fonte-link', 'fonte-metodo', 'esplora-h',
-   'scelta', 'scelta-involucro', 'titolo', 'apertura-testo', 'anni', 'come-leggere'
+   'scelta', 'scelta-involucro', 'titolo', 'apertura-testo', 'come-leggere',
+   'contesto-ponte', 'fonte-portale', 'fonte-altra', 'fonte-descrizioni',
+   'vista-nota', 'vista-altra', 'testata-contesto', 'conti', 'racconto',
+   'tempo', 'tempo-grafico', 'tempo-legenda', 'anno-scelta', 'anno-prec', 'anno-succ'
   ].forEach(function (id) { dom[id] = document.getElementById(id); });
 
   var dati = null;
-  var stato = { sezione: 'uscite', percorso: [], aperta: null, tutte: false };
+  var ponte = null;   // assets/ponte.json: le funzioni COFOG nelle due viste
+  var tabBtns = [];
+  var stato = { lato: null, sezione: null, percorso: [], aperta: null, tutte: false };
 
   /* ── Numeri ────────────────────────────────────────────── */
 
   var nf = new Intl.NumberFormat('it-IT');
+  // it-IT non separa le migliaia sotto le cinque cifre: per gli importi
+  // «5196 €» si legge peggio di «5.196 €», quindi si forza il gruppo.
+  var nfMigliaia = nf;
+  try { nfMigliaia = new Intl.NumberFormat('it-IT', { useGrouping: 'always' }); }
+  catch (e) { /* motori più vecchi: resta il formato predefinito */ }
   var nf1 = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   var nf2 = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -51,13 +78,59 @@
   function perAbitante(v) {
     if (!dati.meta.popolazione) return null;
     var q = v / dati.meta.popolazione;
-    return (q >= 10 ? nf1.format(q) : nf2.format(q)) + ' €';
+    // sopra i mille euro i decimali sono rumore
+    return (q >= 1000 ? nfMigliaia.format(Math.round(q))
+          : q >= 10 ? nf1.format(q) : nf2.format(q)) + ' €';
+  }
+
+  function quotaPil(v) {
+    if (!dati.meta.pil) return null;
+    var q = (v / dati.meta.pil) * 100;
+    if (q > 0 && q < 0.05) return '< 0,05% del PIL';
+    return (q >= 10 ? nf1.format(q) : nf2.format(q)) + '% del PIL';
+  }
+
+  /* ── I due lati del bilancio ───────────────────────────── */
+
+  // La vista della spesa pubblica ha due lati, entrate e uscite, con il
+  // saldo come risultato. Quella del bilancio dello Stato ne ha uno solo:
+  // dove meta.lati manca, tutto il resto continua a funzionare uguale.
+  function lati() { return dati.meta.lati || null; }
+
+  function latoCorrente() {
+    var L = lati();
+    if (!L) return {
+      id: null,
+      importo: sezioneCorrente().importo,
+      storico: dati.meta.totale_storico,
+      etichetta_totale: dati.meta.etichetta_totale
+    };
+    return L.filter(function (l) { return l.id === stato.lato; })[0] || L[0];
+  }
+
+  function latoPredefinito() {
+    var L = lati();
+    if (!L) return null;
+    var id = dati.meta.lato_predefinito;
+    return L.filter(function (l) { return l.id === id; })[0] ? id : L[0].id;
+  }
+
+  function sezioniDelLato() {
+    return dati.sezioni.filter(function (s) {
+      return !s.lato || !stato.lato || s.lato === stato.lato;
+    });
+  }
+
+  function sezionePredefinita() {
+    var s = sezioniDelLato()[0];
+    return s ? s.id : (dati.sezioni[0] || {}).id;
   }
 
   /* ── Albero ────────────────────────────────────────────── */
 
   function sezioneCorrente() {
-    return dati.sezioni.filter(function (s) { return s.id === stato.sezione; })[0] || dati.sezioni[0];
+    return dati.sezioni.filter(function (s) { return s.id === stato.sezione; })[0]
+        || sezioniDelLato()[0] || dati.sezioni[0];
   }
 
   function catena() {
@@ -156,11 +229,13 @@
 
   // Grafico d'andamento: anni sull'asse, importi sull'altro, vuoti dove
   // la voce non esisteva. Lo snippet va nel blocco di contesto e nelle schede.
-  function graficoAndamento(nodo) {
+  function graficoAndamento(nodo, larghezza) {
     var p = serieStorico(nodo);
     if (!p) return null;
-    var ann = dati.meta.anni, ts = dati.meta.totale_storico;
-    var W = 560, H = 176, ML = 52, MR = 16, MT = 18, MB = 34;
+    var ann = dati.meta.anni, ts = latoCorrente().storico || dati.meta.totale_storico;
+    var W = larghezza || 560;
+    var H = larghezza ? (larghezza < 620 ? 190 : 250) : 176;
+    var ML = 52, MR = 16, MT = 18, MB = 34;
     var iw = W - ML - MR, ih = H - MT - MB;
     var vmin = Infinity, vmax = -Infinity;
     p.forEach(function (q) {
@@ -179,7 +254,9 @@
 
     var fig = document.createElement('figure');
     fig.className = 'andamento';
-    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img' });
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img'
+    });
     svg.setAttribute('aria-label', 'Andamento dal ' + primo.anno + ' al ' + ultimo.anno +
       ': da ' + euroBreve(primo.valore) + ' a ' + euroBreve(ultimo.valore) +
       (pct !== null ? ', ' + (pct > 0 ? '+' : '−') + nf1.format(Math.abs(pct)) + '%' : '') + '.');
@@ -196,7 +273,20 @@
       }
     });
 
+    var salto = Math.max(1, Math.ceil(ann.length / 16));
+    var fisse = [0, ann.length - 1];
+    var iQui = ann.indexOf(dati.meta.anno);
+    if (iQui >= 0) fisse.push(iQui);
+    var etichette = {};
+    fisse.forEach(function (i) { etichette[i] = true; });
+    for (var k = salto; k < ann.length - 1; k += salto) {
+      var libera = fisse.every(function (j) {
+        return Math.abs(k - j) >= salto;
+      });
+      if (libera) etichette[k] = true;
+    }
     ann.forEach(function (a, i) {
+      if (!etichette[i]) return;
       var t = svgEl('text', {
         x: (ML + (i / (ann.length - 1)) * iw).toFixed(1), y: H - 12,
         'text-anchor': 'middle', 'class': 'asse' + (a === dati.meta.anno ? ' asse-qui' : '')
@@ -250,7 +340,7 @@
         width: (passo + 1).toFixed(1), height: ih, fill: 'transparent'
       });
       var testo = a + ' · ' + euroBreve(q.valore) +
-        (ts && ts[i] ? ' · ' + perc(q.valore, ts[i]) + ' della spesa dello Stato' : '');
+        (ts && ts[i] ? ' · ' + perc(q.valore, ts[i]) + ' ' + etichettaTotale() : '');
       rect.addEventListener('mouseenter', function () { mostraTip(rect, testo); });
       rect.addEventListener('mouseleave', nascondiTip);
       svg.appendChild(rect);
@@ -275,6 +365,140 @@
     return fig;
   }
 
+  /* ── Il ponte fra le due viste ─────────────────────────── */
+
+  function etichettaTotale() {
+    return latoCorrente().etichetta_totale || dati.meta.etichetta_totale
+        || 'della spesa dello Stato';
+  }
+
+  // Le divisioni e i gruppi COFOG hanno lo stesso identificativo nelle
+  // due viste (cosa-07, cosa-07-03): assets/ponte.json tiene in fila i
+  // due importi, anno per anno. Sono misure diverse e non si sottraggono.
+  function ponteDi(nodo) {
+    if (!ponte || !nodo || !/^cosa-\d\d(-\d\d)?$/.test(nodo.id)) return null;
+    var altra = VISTA === 'pa' ? 'stato' : 'pa';
+    var anni = ponte['anni_' + altra];
+    var serie = (ponte[altra] || {})[nodo.id];
+    if (!anni || !serie) return null;
+    var i = anni.indexOf(dati.meta.anno);
+    if (i < 0 || serie[i] === null || serie[i] === undefined) return null;
+    return { vista: altra, valore: serie[i] };
+  }
+
+  function bloccoPonte(nodo) {
+    var p = ponteDi(nodo);
+    if (!p) return null;
+
+    var box = document.createElement('aside');
+    box.className = 'ponte';
+
+    var testa = document.createElement('p');
+    testa.className = 'ponte-testa';
+    var forte = document.createElement('strong');
+    forte.textContent = euroBreve(p.valore);
+
+    if (p.vista === 'stato') {
+      testa.appendChild(document.createTextNode('Nel bilancio dello Stato la stessa ' +
+        'funzione vale '));
+      testa.appendChild(forte);
+      testa.appendChild(document.createTextNode(' di impegni nel ' + dati.meta.anno + '.'));
+    } else {
+      testa.appendChild(document.createTextNode('Includendo Regioni, Comuni ed ' +
+        'enti previdenziali, la stessa funzione vale '));
+      testa.appendChild(forte);
+      testa.appendChild(document.createTextNode(' nel ' + dati.meta.anno + '.'));
+    }
+    box.appendChild(testa);
+
+    var nota = document.createElement('p');
+    nota.className = 'ponte-nota';
+    nota.textContent = p.vista === 'stato'
+      ? 'Le due cifre non sono confrontabili per differenza. Il bilancio dello Stato ' +
+        'adotta la competenza giuridica e include voci che i conti nazionali non ' +
+        'registrano come spesa: il rimborso del capitale del debito e i trasferimenti ' +
+        'agli altri enti. Serve a individuare i ministeri e i capitoli che stanno ' +
+        'dietro alla funzione, non a calcolarne una quota.'
+      : 'Le due cifre non sono confrontabili per differenza. I conti nazionali ' +
+        'escludono il rimborso del capitale del debito e registrano una volta sola i ' +
+        'trasferimenti fra enti: il bilancio dello Stato non è una quota di questa ' +
+        'cifra, è un’altra misura della stessa funzione.';
+    box.appendChild(nota);
+
+    var a = document.createElement('a');
+    a.className = 'ponte-vai';
+    a.href = indirizzo(p.vista, dati.meta.anno, nodo.id);
+    a.textContent = p.vista === 'stato'
+      ? 'Apri la funzione nel bilancio dello Stato'
+      : 'Apri la funzione in tutta la spesa pubblica';
+    box.appendChild(a);
+    return box;
+  }
+
+  /* ── Indirizzi condivisibili ───────────────────────────── */
+
+  function indirizzo(vista, anno, voce) {
+    var q = [];
+    if (vista !== PREDEFINITA) q.push('vista=' + vista);
+    if (anno) q.push('anno=' + anno);
+    if (voce) q.push('voce=' + voce);
+    return location.pathname + (q.length ? '?' + q.join('&') : '');
+  }
+
+  function voceCorrente() {
+    if (stato.aperta) return stato.aperta;
+    if (stato.percorso.length) return stato.percorso[stato.percorso.length - 1];
+    var L = lati();
+    var radice = L ? (dati.sezioni.filter(function (s) {
+      return s.lato === dati.meta.lato_predefinito;
+    })[0] || dati.sezioni[0]).id : dati.sezioni[0].id;
+    return stato.sezione === radice ? '' : stato.sezione;
+  }
+
+  function segnaUrl(push) {
+    if (!window.history || !history.replaceState) return;
+    var url = indirizzo(VISTA, dati.meta.anno, voceCorrente());
+    if (url === location.pathname + location.search) return;
+    history[push ? 'pushState' : 'replaceState'](null, '', url);
+  }
+
+  // Ritrova un nodo dal suo identificativo, in qualsiasi sezione:
+  // serve agli indirizzi condivisibili e al ponte fra le viste.
+  function cerca(nodo, id, cammino) {
+    var figli = nodo.figli || [];
+    for (var i = 0; i < figli.length; i++) {
+      var f = figli[i];
+      if (f.id === id)
+        return haFigli(f) ? { percorso: cammino.concat([f.id]), foglia: null }
+                          : { percorso: cammino, foglia: f.id };
+      if (haFigli(f)) {
+        var r = cerca(f, id, cammino.concat([f.id]));
+        if (r) return r;
+      }
+    }
+    return null;
+  }
+
+  function vaiA(id) {
+    if (!id) return false;
+    for (var i = 0; i < dati.sezioni.length; i++) {
+      var sez = dati.sezioni[i];
+      if (sez.id === id) {
+        if (sez.lato) stato.lato = sez.lato;
+        stato.sezione = id; stato.percorso = []; stato.aperta = null; stato.tutte = false;
+        return true;
+      }
+      var r = cerca(sez, id, []);
+      if (r) {
+        if (sez.lato) stato.lato = sez.lato;
+        stato.sezione = sez.id;
+        stato.percorso = r.percorso; stato.aperta = r.foglia; stato.tutte = false;
+        return true;
+      }
+    }
+    return false;
+  }
+
   /* ── Disegno ───────────────────────────────────────────── */
 
   function disegna() {
@@ -286,10 +510,11 @@
     dom['esplora-h'].textContent = radice.titolo ||
       (radice.domanda ? radice.domanda + ' i soldi' : 'Esplora il bilancio');
     briciole(cat);
-    barra(nodo, figli);
+    testataVoce(nodo, radice, cat);
     contesto(nodo, radice, cat);
+    barra(nodo, figli);
     elenco(nodo, figli);
-    apertura(radice);
+    costruisciConti();
   }
 
   function briciole(cat) {
@@ -312,7 +537,7 @@
         b.type = 'button'; b.className = 'briciola'; b.textContent = etichetta;
         b.addEventListener('click', function () {
           stato.percorso = stato.percorso.slice(0, i);
-          stato.aperta = null; stato.tutte = false; disegna();
+          stato.aperta = null; stato.tutte = false; disegna(); segnaUrl(true);
         });
         dom.briciole.appendChild(b);
       }
@@ -338,11 +563,19 @@
       dom.barra.appendChild(piena);
     } else {
       delete dom.barra.dataset.vuota;
+      // Alcune voci possono essere negative — gli acquisti netti di beni
+      // non prodotti lo sono quando le vendite superano gli acquisti. Una
+      // larghezza negativa non esiste: la barra si misura sulla somma
+      // delle sole voci positive, le altre restano nell'elenco.
+      var base = figli.reduce(function (a, f) {
+        return a + Math.max(0, f.importo);
+      }, 0) || nodo.importo;
       figli.slice(0, maxFette()).forEach(function (f, i) {
+        if (f.importo <= 0) return;
         var b = document.createElement('button');
         b.type = 'button'; b.className = 'fetta';
         b.style.setProperty('--fetta-colore', coloreDi(i, figli.length));
-        b.style.width = ((f.importo / nodo.importo) * 100) + '%';
+        b.style.width = ((f.importo / base) * 100) + '%';
         b.dataset.id = f.id;
         var etichetta = f.nome + ' — ' + euroBreve(f.importo) + ' (' + perc(f.importo, nodo.importo) + ')' +
           (haFigli(f) ? ' · apri il dettaglio' : '');
@@ -357,11 +590,13 @@
       });
       var resto = figli.slice(maxFette());
       if (resto.length) {
-        var somma = resto.reduce(function (a, f) { return a + f.importo; }, 0);
+        var somma = resto.reduce(function (a, f) {
+          return a + Math.max(0, f.importo);
+        }, 0);
         var r = document.createElement('div');
         r.className = 'fetta fetta-resto';
         r.style.setProperty('--fetta-colore', 'var(--resto)');
-        r.style.width = ((somma / nodo.importo) * 100) + '%';
+        r.style.width = ((somma / base) * 100) + '%';
         var etichettaResto = 'Altre ' + resto.length + ' voci — ' + euroBreve(somma);
         r.dataset.tip = etichettaResto;
         r.setAttribute('aria-hidden', 'true');
@@ -371,10 +606,17 @@
       }
     }
 
+    var etich = document.getElementById('composizione-etichetta');
+    if (etich) etich.textContent = haFigli(nodo)
+      ? 'Che cosa c’è dentro' : 'Dettaglio';
+
     dom['barra-legenda'].textContent = '';
+    var negative = figli.filter(function (f) { return f.importo < 0; }).length;
     var sx = document.createElement('span');
     sx.textContent = !nodo.importo ? 'nessun importo per il ' + dati.meta.anno
       : figli.length ? figli.length + (figli.length === 1 ? ' voce' : ' voci')
+        + (negative ? ', di cui ' + negative + (negative === 1 ? ' negativa' : ' negative')
+           + ' — non disegnate nella barra' : '')
       : 'voce non suddivisa';
     var dx = document.createElement('span');
     dx.className = 'barra-totale';
@@ -431,21 +673,46 @@
     mostraTip(fetta, fetta.dataset.tip || fetta.getAttribute('aria-label') || '');
   }
 
+  // Il pannello risponde a quattro domande, in quest'ordine: che cosa
+  // sto guardando, che cos'è, come è andata, di che cosa è fatto. Prima
+  // la barra stava in cima, staccata dal suo elenco: erano la stessa
+  // informazione a due risoluzioni, separate da tutto il resto.
+  function testataVoce(nodo, radice, cat) {
+    var profondo = cat.length > 1;
+    dom['voce-testata'].hidden = !profondo;
+    if (!profondo) return;
+    dom['voce-titolo'].textContent = nodo.nome;
+    var pezzi = [euroBreve(nodo.importo)];
+    if (radice.importo)
+      pezzi.push(perc(nodo.importo, radice.importo) + ' ' + etichettaTotale());
+    var pa = perAbitante(nodo.importo);
+    if (pa) pezzi.push(pa + ' per abitante');
+    dom['testata-cifre'].textContent = pezzi.join('  ·  ');
+  }
+
   function contesto(nodo, radice, cat) {
     var profondo = cat.length > 1;
-    dom.contesto.hidden = !profondo;
     dom['contesto-grafico'].textContent = '';
-    if (profondo) {
-      var q = (nodo.importo / radice.importo) * 100;
-      dom['contesto-fetta'].style.width = Math.max(q, 0.35) + '%';
-      dom['contesto-testo'].textContent =
-        nodo.nome + ': ' + perc(nodo.importo, radice.importo) + ' del totale, pari a ' +
-        euroBreve(nodo.importo) + '.';
-      var g = graficoAndamento(nodo);
-      if (g) dom['contesto-grafico'].appendChild(g);
-    }
+    dom['contesto-ponte'].textContent = '';
+
     dom['nota-voce'].textContent = nodo.descrizione || '';
-    dom['nota-voce'].hidden = !nodo.descrizione;
+    dom['contesto-parole'].hidden = !nodo.descrizione;
+
+    var pon = profondo ? bloccoPonte(nodo) : null;
+    if (pon) dom['contesto-ponte'].appendChild(pon);
+    if (pon && nodo.descrizione) dom['contesto-griglia'].dataset.due = 'si';
+    else delete dom['contesto-griglia'].dataset.due;
+
+    var g = null;
+    if (profondo) {
+      var pannello = document.getElementById('pannello');
+      var largo = pannello ? pannello.clientWidth : 0;
+      g = graficoAndamento(nodo, largo > 320 ? largo : null);
+    }
+    if (g) dom['contesto-grafico'].appendChild(g);
+    dom['contesto-andamento'].hidden = !g;
+
+    dom.contesto.hidden = !(nodo.descrizione || pon || g);
   }
 
   function elenco(nodo, figli) {
@@ -454,8 +721,8 @@
     if (!figli.length) {
       dom.voci.hidden = true;
       dom.vuoto.hidden = false;
-      dom.vuoto.textContent = 'In questa chiave di lettura la voce non è divisa ' +
-        'ulteriormente: ' + euroPieno(nodo.importo) + ' complessivi.';
+      dom.vuoto.textContent = 'Questa voce non ha un livello di dettaglio ' +
+        'ulteriore: ' + euroPieno(nodo.importo) + ' in tutto.';
       return;
     }
     dom.voci.hidden = false;
@@ -510,12 +777,17 @@
       corpo.appendChild(misura);
     }
 
+    // Le righe che scendono di livello lo dicevano, le foglie no: non si
+    // capiva né che si potessero aprire né quale fosse aperta.
+    var piu = document.createElement('span');
     if (apribile) {
-      var piu = document.createElement('span');
       piu.className = 'voce-piu';
       piu.textContent = f.figli.length + (f.figli.length === 1 ? ' voce dentro' : ' voci dentro');
-      corpo.appendChild(piu);
+    } else {
+      piu.className = 'voce-piu voce-piu-scheda';
+      piu.textContent = stato.aperta === f.id ? 'Chiudi il dettaglio' : 'Apri il dettaglio';
     }
+    corpo.appendChild(piu);
 
     var cifre = document.createElement('span');
     cifre.className = 'voce-cifre';
@@ -542,22 +814,63 @@
     return li;
   }
 
+  // La scheda della foglia ha gli stessi blocchi del pannello: a sinistra
+  // che cos'è, a destra i numeri, sotto l'andamento a tutta larghezza.
+  // Prima stava tutta stretta in metà pagina, con il grafico piccolo e
+  // l'altra metà vuota.
   function scheda(f, padre) {
     var box = document.createElement('div');
     box.className = 'voce-scheda';
+
+    var griglia = document.createElement('div');
+    griglia.className = 'scheda-griglia';
+
+    var parole = document.createElement('div');
+    parole.className = 'scheda-parole';
     if (f.descrizione) {
       var p = document.createElement('p');
       p.textContent = f.descrizione;
-      box.appendChild(p);
+      parole.appendChild(p);
     }
+    griglia.appendChild(parole);
+
+    var numeri = document.createElement('div');
+    numeri.className = 'scheda-numeri';
+    var titolo = document.createElement('h5');
+    titolo.className = 'blocco-etichetta';
+    titolo.textContent = 'I numeri';
+    numeri.appendChild(titolo);
+
     var dl = document.createElement('dl');
-    dato(dl, 'Importo esatto', euroPieno(f.importo));
+    dato(dl, dati.meta.etichetta_importo || 'Importo esatto', euroPieno(f.importo));
+    var radice = sezioneCorrente();
+    if (radice && radice.importo)
+      dato(dl, 'Quota del totale', perc(f.importo, radice.importo));
     var pa = perAbitante(f.importo);
     if (pa) dato(dl, 'Per abitante', pa);
-    dato(dl, 'Quota della voce superiore', perc(f.importo, padre.importo));
-    box.appendChild(dl);
-    var g = graficoAndamento(f);
-    if (g) box.appendChild(g);
+    var pil = quotaPil(f.importo);
+    if (pil) dato(dl, 'Quota del PIL', pil.replace(' del PIL', ''));
+    numeri.appendChild(dl);
+    griglia.appendChild(numeri);
+    box.appendChild(griglia);
+
+    // il grafico si disegna sulla larghezza dell'elenco, meno il rientro
+    // della scheda: la scheda non è ancora nel documento e non si misura
+    var largo = dom.voci ? dom.voci.clientWidth - 34 : 0;
+    var g = graficoAndamento(f, largo > 320 ? largo : null);
+    if (g) {
+      var blocco = document.createElement('div');
+      blocco.className = 'scheda-andamento';
+      var et = document.createElement('h5');
+      et.className = 'blocco-etichetta';
+      et.textContent = 'Andamento';
+      blocco.appendChild(et);
+      blocco.appendChild(g);
+      box.appendChild(blocco);
+    }
+
+    var pon = bloccoPonte(f);
+    if (pon) box.appendChild(pon);
     return box;
   }
 
@@ -574,11 +887,11 @@
     if (haFigli(nodo)) {
       stato.percorso = stato.percorso.concat([nodo.id]);
       stato.aperta = null; stato.tutte = false;
-      spegni(); disegna();
+      spegni(); disegna(); segnaUrl(true);
       dom.briciole.scrollIntoView({ behavior: ridotto() ? 'auto' : 'smooth', block: 'start' });
     } else {
       stato.aperta = stato.aperta === nodo.id ? null : nodo.id;
-      disegna();
+      disegna(); segnaUrl(true);
     }
   }
 
@@ -586,45 +899,134 @@
     return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
-  function apertura(radice) {
-    dom['cifra-totale'].textContent = euroBreve(radice.importo);
-    var pezzi = [euroPieno(radice.importo)];
-    var pa = perAbitante(radice.importo);
-    if (pa) pezzi.push(pa + ' per abitante');
-    var prev = dati.meta.totale_2025;
-    if (prev) {
-      var p = ((radice.importo - prev) / prev) * 100;
-      pezzi.push((p > 0 ? '+' : '−') + nf1.format(Math.abs(p)) + '% sul 2025');
-    }
-    var ts = dati.meta.totale_storico, ann = dati.meta.anni;
-    if (ts && ann && ann.length > 1) {
-      var iQui = ann.indexOf(dati.meta.anno);
-      var iPrimo = -1;
-      for (var i = 0; i <= iQui; i++) if (ts[i] != null) { iPrimo = i; break; }
-      if (iPrimo >= 0 && iPrimo < iQui && ts[iPrimo]) {
-        var pd = ((ts[iQui] - ts[iPrimo]) / ts[iPrimo]) * 100;
-        pezzi.push((pd > 0 ? '+' : '−') + nf1.format(Math.abs(pd)) + '% dal ' + ann[iPrimo]);
-        // l'ultimo tratto mescola le misure se l'anno è di previsione:
-        // si dice, altrimenti il +x% sembra un confronto fra uguali
-        if (ePrevisione(dati.meta.anno))
-          pezzi.push(ann[iQui] + ' a stanziamenti, non impegni');
-      }
-    }
-    dom['cifra-nota'].textContent = pezzi.join('  ·  ');
+  /* ── La fascia del bilancio ────────────────────────────
+
+     Entrate, uscite, saldo: tre cifre in fila, nell'ordine in cui si
+     fa la sottrazione. Le prime due sono anche il comando che decide
+     che cosa si esplora sotto — il controllo sta dove sta il
+     significato, non in una barra a parte.
+     ─────────────────────────────────────────────────────── */
+
+  function contoNote(v) {
+    var note = [];
+    var pil = quotaPil(v);
+    if (pil) note.push(pil);
+    var pa = perAbitante(v);
+    if (pa) note.push(pa + ' per abitante');
+    return note;
   }
 
-  /* ── Avvio ─────────────────────────────────────────────── */
+  // Sul saldo il segno lo porta già la cifra: la quota si scrive in
+  // valore assoluto, e con un decimale come si legge sui giornali.
+  function quotaPilSaldo(v) {
+    if (!dati.meta.pil) return [];
+    return [nf1.format(Math.abs(v / dati.meta.pil * 100)) + '% del PIL'];
+  }
 
-  function inizializza(d) {
-    dati = d;
-    var m = d.meta;
-    document.title = m.titolo + ' — ' + m.ente;
-    dom.occhiello.textContent = m.ente;
-    dom.sommario.textContent = m.sottotitolo;
+  function cartaConto(opz) {
+    var el = document.createElement(opz.scegliibile ? 'button' : 'div');
+    el.className = 'conto' + (opz.classe ? ' ' + opz.classe : '');
+    if (opz.scegliibile) {
+      el.type = 'button';
+      el.setAttribute('aria-pressed', opz.attivo ? 'true' : 'false');
+      el.addEventListener('click', opz.azione);
+    }
+    var nome = document.createElement('span');
+    nome.className = 'conto-nome';
+    nome.textContent = opz.nome;
+    var cifra = document.createElement('span');
+    cifra.className = 'conto-cifra';
+    cifra.textContent = euroBreve(opz.importo);
+    el.appendChild(nome);
+    el.appendChild(cifra);
+    (opz.note || []).forEach(function (t) {
+      var note = document.createElement('span');
+      note.className = 'conto-note';
+      note.textContent = t;
+      el.appendChild(note);
+    });
+    return el;
+  }
 
-    // Titolo composto: la parte centrale va in evidenza.
+  function costruisciConti() {
+    dom.conti.textContent = '';
+    var L = lati();
+
+    if (!L) {
+      // bilancio dello Stato: una cifra sola, e resta l'eroe della pagina
+      dom.conti.dataset.uno = 'si';
+      var radice = sezioneCorrente();
+      var pezzi = [];
+      var pil = quotaPil(radice.importo);
+      if (pil) pezzi.push(pil);
+      var pa = perAbitante(radice.importo);
+      if (pa) pezzi.push(pa + ' per abitante');
+      var ts = dati.meta.totale_storico, ann = dati.meta.anni;
+      if (ts && ann && ann.length > 1) {
+        var iQui = ann.indexOf(dati.meta.anno), iPrimo = -1;
+        for (var i = 0; i <= iQui; i++) if (ts[i] != null) { iPrimo = i; break; }
+        if (iPrimo >= 0 && iPrimo < iQui && ts[iPrimo]) {
+          var pd = ((ts[iQui] - ts[iPrimo]) / ts[iPrimo]) * 100;
+          pezzi.push((pd > 0 ? '+' : '−') + nf1.format(Math.abs(pd)) + '% dal ' + ann[iPrimo]);
+          if (ePrevisione(dati.meta.anno))
+            pezzi.push(ann[iQui] + ' a stanziamenti, non impegni');
+        }
+      }
+      pezzi.push(euroPieno(radice.importo));
+      dom.conti.appendChild(cartaConto({
+        nome: radice.titolo || 'Totale', importo: radice.importo,
+        note: [pezzi.join('  ·  ')], classe: 'conto-solo'
+      }));
+      dom.racconto.hidden = true;
+      return;
+    }
+
+    delete dom.conti.dataset.uno;
+    L.forEach(function (l) {
+      dom.conti.appendChild(cartaConto({
+        nome: l.nome, importo: l.importo, note: contoNote(l.importo),
+        scegliibile: true, attivo: l.id === stato.lato,
+        azione: function () { cambiaLato(l.id); }
+      }));
+    });
+
+    var saldo = dati.meta.saldo;
+    if (saldo) {
+      dom.conti.appendChild(cartaConto({
+        nome: saldo.etichetta || saldo.nome, importo: saldo.importo,
+        note: quotaPilSaldo(saldo.importo),
+        classe: 'conto-saldo' + (saldo.importo < 0 ? ' conto-saldo-rosso' : '')
+      }));
+    }
+
+    dom.racconto.textContent = dati.meta.racconto || '';
+    dom.racconto.hidden = !dati.meta.racconto;
+  }
+
+  function cambiaLato(id) {
+    if (stato.lato === id) return;
+    stato.lato = id;
+    stato.percorso = []; stato.aperta = null; stato.tutte = false;
+    stato.sezione = sezionePredefinita();
+    testataDelLato();
+    costruisciTab();
+    sincronizzaTab();
+    costruisciConti();
+    spegni(); disegna(); segnaUrl(true);
+  }
+
+  // Titolo, sommario e testo d'apertura appartengono al lato: passando
+  // alle entrate cambia la pagina, non solo l'albero.
+  function testataDelLato() {
+    var m = dati.meta, l = latoCorrente();
+    var titolo = l.titolo || m.titolo;
+    document.title = titolo + ' — Dove vanno i soldi';
+    dom.sommario.textContent = l.sottotitolo || m.sottotitolo || '';
+    dom['apertura-testo'].textContent = l.apertura || m.apertura || '';
+    dom['testata-contesto'].textContent = VISTE[VISTA].nome + ' · ' + m.anno;
+
     dom.titolo.textContent = '';
-    var t = m.titolo_display || { prima: m.titolo, corsivo: '', dopo: '' };
+    var t = l.titolo_display || m.titolo_display || { prima: titolo, corsivo: '', dopo: '' };
     if (t.prima) dom.titolo.appendChild(document.createTextNode(t.prima + ' '));
     if (t.corsivo) {
       var em = document.createElement('em');
@@ -633,66 +1035,387 @@
       if (t.dopo) dom.titolo.appendChild(document.createTextNode(' '));
     }
     if (t.dopo) dom.titolo.appendChild(document.createTextNode(t.dopo));
+  }
 
-    dom['apertura-testo'].textContent = m.apertura ||
-      'Una cifra così grande non dice quasi nulla da sola. Qui sotto puoi aprirla: ogni ' +
-      'volta che scegli una voce, la barra si ridisegna su quella voce e ti mostra come è ' +
-      'fatta dentro.';
+  /* ── Il tempo ──────────────────────────────────────────
+
+     Trent'anni non stanno in una fila di link, e una fila di link non
+     dice niente. Qui l'anno si sceglie sulla linea del totale: si vede
+     dove si è, e come è andata. Il menù e le frecce fanno la stessa
+     cosa da tastiera e sul telefono.
+     ─────────────────────────────────────────────────────── */
+
+  // Le colonne del tempo raccontano tutto il bilancio, non il lato
+  // aperto: l'altezza è il più grande fra entrate e uscite, la parte
+  // piena il più piccolo, e il cappello vuoto è il divario.
+  function serieTempo() {
+    var L = lati();
+    if (!L || L.length < 2) return { a: dati.meta.totale_storico || [], b: null };
+    return { a: L[0].storico || [], b: L[1].storico || [],
+             nomeA: L[0].nome, nomeB: L[1].nome };
+  }
+
+  function costruisciTempo() {
+    var ann = dati.meta.anni, serie = serieTempo();
+    dom.tempo.hidden = !(ann && ann.length > 1);
+    if (dom.tempo.hidden) return;
+
+    var sel = dom['anno-scelta'];
+    sel.textContent = '';
+    ann.forEach(function (a) {
+      var o = document.createElement('option');
+      o.value = a;
+      o.textContent = a + (ePrevisione(a) ? ' · previsione' : '');
+      if (a === dati.meta.anno) o.selected = true;
+      sel.appendChild(o);
+    });
+
+    var i = ann.indexOf(dati.meta.anno);
+    freccia(dom['anno-prec'], i > 0 ? ann[i - 1] : null);
+    freccia(dom['anno-succ'], i >= 0 && i < ann.length - 1 ? ann[i + 1] : null);
+
+    dom['tempo-grafico'].textContent = '';
+    var g = lineaDelTempo(ann, serie);
+    if (g) dom['tempo-grafico'].appendChild(g);
+
+    dom['tempo-legenda'].textContent = '';
+    dom['tempo-legenda'].hidden = !serie.b;
+    if (serie.b) {
+      [['tempo-segno-pieno', 'entrate'],
+       ['tempo-segno-vuoto', 'disavanzo']].forEach(function (par) {
+        var sp = document.createElement('span');
+        sp.className = 'tempo-voce-legenda';
+        var q = document.createElement('i');
+        q.className = par[0];
+        sp.appendChild(q);
+        sp.appendChild(document.createTextNode(par[1]));
+        dom['tempo-legenda'].appendChild(sp);
+      });
+    }
+  }
+
+  var attesaRidisegno = null;
+  window.addEventListener('resize', function () {
+    if (!dati) return;
+    clearTimeout(attesaRidisegno);
+    attesaRidisegno = setTimeout(function () {
+      costruisciTempo();
+      disegna();
+    }, 180);
+  });
+
+  function freccia(el, anno) {
+    if (!el) return;
+    if (anno) {
+      el.href = indirizzo(VISTA, anno, voceCorrente());
+      el.removeAttribute('aria-disabled');
+      el.setAttribute('title', 'Anno ' + anno);
+      el.dataset.anno = anno;
+    } else {
+      el.removeAttribute('href');
+      el.setAttribute('aria-disabled', 'true');
+      el.setAttribute('title', '');
+      delete el.dataset.anno;
+    }
+  }
+
+  function lineaDelTempo(ann, serie) {
+    var W = Math.max(280, dom['tempo-grafico'].clientWidth || 900);
+    var stretto = W < 560;
+    var H = stretto ? 96 : 132, ML = 4, MR = 4;
+    var MT = stretto ? 10 : 14, MB = stretto ? 24 : 28;
+    var iw = W - ML - MR, ih = H - MT - MB;
+    var base = MT + ih;
+    var a = serie.a || [], b = serie.b;
+
+    var max = 0, quanti = 0;
+    ann.forEach(function (anno, i) {
+      var va = a[i], vb = b ? b[i] : null;
+      if (va === null || va === undefined) return;
+      quanti++;
+      var alto = (vb === null || vb === undefined) ? va : Math.max(va, vb);
+      if (alto > max) max = alto;
+    });
+    if (quanti < 2) return null;
+
+    var passo = iw / ann.length;
+    var larghezza = Math.max(2, Math.min(30, passo * 0.68));
+    function xc(i) { return ML + passo * (i + 0.5); }
+    function alt(v) { return Math.max(1.5, (v / max) * ih); }
+
+    var svg = svgEl('svg', {
+      'class': 'tempo-svg', width: W, height: H,
+      viewBox: '0 0 ' + W + ' ' + H, role: 'img'
+    });
+    svg.setAttribute('aria-label', b
+      ? 'Entrate e uscite pubbliche anno per anno dal ' + ann[0] + ' al ' +
+        ann[ann.length - 1] + ': la colonna è la spesa, la parte piena le entrate, '
+        + 'il vuoto in cima il disavanzo.'
+      : 'Il totale anno per anno dal ' + ann[0] + ' al ' + ann[ann.length - 1] +
+        ', in colonne: la più alta è ' + euroBreve(max) + '.');
+
+    var iQui = ann.indexOf(dati.meta.anno);
+
+    // Base a zero, quindi i rapporti fra gli anni sono quelli veri.
+    var colonne = {};
+    ann.forEach(function (anno, i) {
+      var va = a[i];
+      if (va === null || va === undefined) return;
+      var vb = b ? b[i] : null;
+      var haDue = vb !== null && vb !== undefined;
+      var alto = haDue ? Math.max(va, vb) : va;
+      var dentro = haDue ? Math.min(va, vb) : alto;
+      var qui = anno === dati.meta.anno;
+      var prev = ePrevisione(anno);
+      var gruppo = svgEl('g', { 'class': 'tempo-gruppo' });
+
+      // il cappello: la parte scoperta è il divario dell'anno
+      if (haDue && alto > dentro) {
+        var hAlto = alt(alto), hDentro = alt(dentro);
+        gruppo.appendChild(svgEl('rect', {
+          x: (xc(i) - larghezza / 2).toFixed(1), y: (base - hAlto).toFixed(1),
+          width: larghezza.toFixed(1), height: (hAlto - hDentro).toFixed(1),
+          rx: larghezza > 6 ? 1.5 : 0,
+          'class': 'tempo-cappello' + (qui ? ' tempo-cappello-qui' : '')
+        }));
+      }
+      var h = alt(dentro);
+      var classe = 'tempo-barra';
+      if (qui) classe += ' tempo-barra-qui';
+      if (prev) classe += ' tempo-barra-prevista';
+      var barra = svgEl('rect', {
+        x: (xc(i) - larghezza / 2).toFixed(1), y: (base - h).toFixed(1),
+        width: larghezza.toFixed(1), height: h.toFixed(1),
+        rx: larghezza > 6 ? 1.5 : 0, 'class': classe
+      });
+      gruppo.appendChild(barra);
+      colonne[anno] = barra;
+      svg.appendChild(gruppo);
+    });
+
+    svg.appendChild(svgEl('line', {
+      x1: ML, x2: W - MR, y1: base + .5, y2: base + .5, 'class': 'tempo-asse'
+    }));
+
+    // Etichette: i multipli di cinque danno il ritmo del decennio; poi
+    // gli estremi e l'anno scelto, che non si toglie mai.
+    var minSpazio = stretto ? 34 : 42;
+    var scritte = {};
+    [0, ann.length - 1].forEach(function (i) { scritte[i] = true; });
+    if (iQui >= 0) scritte[iQui] = true;
+    ann.forEach(function (anno, i) {
+      if (anno % 5 !== 0) return;
+      var vicino = Object.keys(scritte).some(function (j) {
+        return Math.abs(xc(i) - xc(+j)) < minSpazio;
+      });
+      if (!vicino) scritte[i] = true;
+    });
+
+    var yTesto = H - (stretto ? 7 : 9);
+    ann.forEach(function (anno, i) {
+      if (!scritte[i]) return;
+      // agli estremi l'etichetta si aggancia al bordo invece di centrarsi
+      // sulla colonna: centrata, l'ultimo anno sborda dal riquadro
+      var t = svgEl('text', {
+        x: xc(i).toFixed(1), y: yTesto,
+        'text-anchor': i === 0 ? 'start' : i === ann.length - 1 ? 'end' : 'middle',
+        'class': 'tempo-anno' + (i === iQui ? ' tempo-anno-qui' : '')
+      });
+      t.textContent = anno;
+      svg.appendChild(t);
+    });
+
+    // Bersagli: tutta l'altezza, così si clicca anche sopra le colonne basse
+    ann.forEach(function (anno, i) {
+      var r = svgEl('rect', {
+        x: (ML + passo * i).toFixed(1), y: 0,
+        width: passo.toFixed(1), height: (H - 4).toFixed(1),
+        'class': 'tempo-colpo', 'aria-hidden': 'true'
+      });
+      var va = a[i], vb = b ? b[i] : null;
+      var etichetta;
+      if (va === null || va === undefined) {
+        etichetta = anno + ' · dato non disponibile';
+      } else if (vb !== null && vb !== undefined) {
+        var sal = (dati.meta.saldo && dati.meta.saldo.storico || [])[i];
+        etichetta = anno + ' · ' + (serie.nomeA || 'A').toLowerCase() + ' ' +
+          euroBreve(va) + ' · ' + (serie.nomeB || 'B').toLowerCase() + ' ' +
+          euroBreve(vb);
+        if (sal !== null && sal !== undefined)
+          etichetta += ' · ' + (sal < 0 ? 'disavanzo ' : 'avanzo ') +
+            euroBreve(Math.abs(sal));
+      } else {
+        etichetta = anno + ' · ' + euroBreve(va);
+      }
+      if (ePrevisione(anno)) etichetta += ' · previsione';
+      r.addEventListener('mouseenter', function () {
+        if (colonne[anno]) colonne[anno].dataset.sfiorata = 'si';
+        mostraTip(r, etichetta);
+      });
+      r.addEventListener('mouseleave', function () {
+        if (colonne[anno]) delete colonne[anno].dataset.sfiorata;
+        nascondiTip();
+      });
+      r.addEventListener('click', function () {
+        nascondiTip();
+        caricaAnno(anno, voceCorrente(), true);
+      });
+      svg.appendChild(r);
+    });
+
+    return svg;
+  }
+
+  /* ── Caricamento di un anno ────────────────────────────── */
+
+  var caricando = false;
+
+  function caricaAnno(anno, voce, push) {
+    anno = parseInt(anno, 10);
+    if (caricando || !anno || anno === dati.meta.anno) return;
+    caricando = true;
+    document.documentElement.dataset.caricando = 'si';
+    fetch('assets/' + VISTE[VISTA].prefisso + '_' + anno + '.json')
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        applica(d, voce);
+        if (push !== false) segnaUrl(true);
+      })
+      .catch(function () {
+        // l'anno non c'è in questa vista: ci pensa il caricamento normale
+        location.href = indirizzo(VISTA, anno, voce);
+      })
+      .then(function () {
+        caricando = false;
+        delete document.documentElement.dataset.caricando;
+      });
+  }
+
+  /* ── Applicazione dei dati ─────────────────────────────── */
+
+  function applica(d, voce) {
+    var sezionePrima = stato.sezione;
+    dati = d;
+    var m = d.meta;
+
     dom['fonte-nome'].textContent = m.fonte_nome;
     dom['fonte-metodo'].textContent = m.nota_metodo;
     dom['fonte-link'].href = m.fonte_url;
-    if (dom['come-leggere'] && m.come_leggere)
-      dom['come-leggere'].textContent = m.come_leggere;
+    if (m.fonte_link_testo) dom['fonte-link'].textContent = m.fonte_link_testo;
+    if (m.descrizioni) dom['fonte-descrizioni'].textContent = m.descrizioni;
+    if (m.come_leggere) dom['come-leggere'].textContent = m.come_leggere;
+    if (m.vista_nota) dom['vista-nota'].textContent = m.vista_nota;
+    dom['testata-contesto'].textContent = VISTE[VISTA].nome + ' · ' + m.anno;
 
-    stato.sezione = d.sezioni[0].id;
-
-    var ann = d.meta.anni;
-    dom.anni.textContent = '';
-    if (ann && ann.length > 1) {
-      dom.anni.hidden = false;
-      var etichetta = document.createElement('span');
-      etichetta.className = 'anni-etichetta';
-      etichetta.textContent = 'Anni';
-      dom.anni.appendChild(etichetta);
-      ann.forEach(function (a) {
-        if (a === d.meta.anno) {
-          var qui = document.createElement('span');
-          qui.setAttribute('aria-current', 'page');
-          qui.textContent = a;
-          dom.anni.appendChild(qui);
-        } else {
-          var l = document.createElement('a');
-          l.href = '?anno=' + a;
-          l.textContent = a;
-          dom.anni.appendChild(l);
-        }
-      });
-    } else {
-      dom.anni.hidden = true;
+    if (m.portale) {
+      dom['fonte-portale'].href = m.portale.url;
+      dom['fonte-portale'].textContent = '';
+      dom['fonte-portale'].appendChild(document.createTextNode(m.portale.nome));
+      var nascosta = document.createElement('span');
+      nascosta.className = 'visually-hidden';
+      nascosta.textContent = ', il portale dei dati (si apre in un nuovo tab)';
+      dom['fonte-portale'].appendChild(nascosta);
     }
 
-    // schede di chiave di lettura: stile nav-tabs di Bootstrap Italia,
-    // con gestione completa da tastiera (frecce, Home/End) perché il
-    // pannello è unico e ridisegnato
+    var altra = VISTA === 'pa' ? 'stato' : 'pa';
+
+    dom['vista-altra'].textContent = '';
+    var invito = document.createElement('a');
+    invito.href = indirizzo(altra, m.anno, '');
+    invito.className = 'vista-altra-link';
+    if (altra === 'stato') {
+      dom['vista-altra'].appendChild(document.createTextNode(
+        'Per il dettaglio per ministero, missione e capitolo: '));
+      invito.textContent = 'apri il bilancio dello Stato';
+    } else {
+      dom['vista-altra'].appendChild(document.createTextNode(
+        'Per il perimetro completo, con Regioni, Comuni ed enti previdenziali: '));
+      invito.textContent = 'torna a tutta la spesa pubblica';
+    }
+    dom['vista-altra'].appendChild(invito);
+
+    dom['fonte-altra'].textContent = '';
+    var linkAltra = document.createElement('a');
+    linkAltra.href = indirizzo(altra, m.anno, '');
+    linkAltra.textContent = VISTE[altra].nome;
+    dom['fonte-altra'].appendChild(linkAltra);
+    dom['fonte-altra'].appendChild(document.createTextNode(altra === 'stato'
+      ? ' — la stessa domanda sul solo bilancio statale, ma scendendo fino al '
+        + 'ministero, alla missione e al programma.'
+      : ' — la stessa domanda su tutta la pubblica amministrazione, in contabilità '
+        + 'nazionale, con entrate e saldo.'));
+
+    // Il lato prima di tutto: da lì dipendono sezioni, testata e cifre.
+    if (!lati()) stato.lato = null;
+    else if (!stato.lato ||
+             !lati().filter(function (l) { return l.id === stato.lato; })[0])
+      stato.lato = latoPredefinito();
+
+    // Se la voce chiesta non c'è in questo anno si torna alla radice, ma
+    // si resta nello stesso lato e nella stessa chiave di lettura.
+    if (!voce || !vaiA(voce)) {
+      stato.percorso = []; stato.aperta = null; stato.tutte = false;
+      var resta = sezioniDelLato().filter(function (s) { return s.id === sezionePrima; })[0];
+      stato.sezione = resta ? sezionePrima : sezionePredefinita();
+    }
+
+    testataDelLato();
+    costruisciTab();
+    sincronizzaTab();
+    costruisciTempo();
+    spegni();
+    disegna();
+  }
+
+  function costruisciTab() {
     dom.scelta.textContent = '';
-    var tabBtns = [];
-    d.sezioni.forEach(function (sez, i) {
+    tabBtns = [];
+    sezioniDelLato().forEach(function (sez) {
       var li = document.createElement('li');
       li.className = 'nav-item';
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'nav-link' + (i === 0 ? ' active' : '');
+      btn.className = 'nav-link';
       btn.id = 'tab-' + sez.id;
       btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-      btn.setAttribute('tabindex', i === 0 ? '0' : '-1');
       btn.setAttribute('aria-controls', 'pannello');
-      btn.textContent = sez.etichetta || sez.domanda || sez.nome;
-      btn.addEventListener('click', function () { attivaTab(btn, sez); });
+      btn.textContent = sez.etichetta || sez.nome;
+      btn.addEventListener('click', function () { attivaTab(sez.id); });
       li.appendChild(btn);
       dom.scelta.appendChild(li);
       tabBtns.push(btn);
     });
+    dom['scelta-involucro'].hidden = tabBtns.length < 2;
+  }
+
+  function attivaTab(id) {
+    if (stato.sezione === id) return;
+    stato.sezione = id;
+    stato.percorso = []; stato.aperta = null; stato.tutte = false;
+    sincronizzaTab();
+    spegni(); disegna(); segnaUrl(true);
+  }
+
+  function sincronizzaTab() {
+    tabBtns.forEach(function (b) {
+      var on = b.id === 'tab-' + stato.sezione;
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.setAttribute('tabindex', on ? '0' : '-1');
+      b.classList.toggle('active', on);
+    });
+    var pannello = document.getElementById('pannello');
+    if (pannello) pannello.setAttribute('aria-labelledby', 'tab-' + stato.sezione);
+  }
+
+  /* ── Avvio ─────────────────────────────────────────────── */
+
+  function inizializza(d) {
+    applica(d, param('voce'));
+    segnaUrl(false);
+
     dom.scelta.addEventListener('keydown', function (e) {
       var i = tabBtns.indexOf(document.activeElement);
       if (i < 0) return;
@@ -704,28 +1427,31 @@
       if (j === null) return;
       e.preventDefault();
       tabBtns[j].focus();
-      attivaTab(tabBtns[j], d.sezioni[j]);
+      attivaTab(tabBtns[j].id.replace(/^tab-/, ''));
     });
-    function attivaTab(btn, sez) {
-      if (stato.sezione === sez.id) return;
-      stato.sezione = sez.id;
-      stato.percorso = []; stato.aperta = null; stato.tutte = false;
-      tabBtns.forEach(function (b) {
-        var on = b === btn;
-        b.setAttribute('aria-selected', on ? 'true' : 'false');
-        b.setAttribute('tabindex', on ? '0' : '-1');
-        b.classList.toggle('active', on);
-      });
-      var pannello = document.getElementById('pannello');
-      if (pannello) pannello.setAttribute('aria-labelledby', 'tab-' + sez.id);
-      spegni(); disegna();
-    }
-    dom['scelta-involucro'].hidden = d.sezioni.length < 2;
-    var pannelloIniziale = document.getElementById('pannello');
-    if (pannelloIniziale)
-      pannelloIniziale.setAttribute('aria-labelledby', 'tab-' + d.sezioni[0].id);
 
-    disegna();
+    dom['anno-scelta'].addEventListener('change', function () {
+      caricaAnno(this.value, voceCorrente(), true);
+    });
+    [dom['anno-prec'], dom['anno-succ']].forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        if (!el.dataset.anno) { e.preventDefault(); return; }
+        e.preventDefault();
+        caricaAnno(el.dataset.anno, voceCorrente(), true);
+      });
+    });
+
+    window.addEventListener('popstate', function () {
+      var anno = parseInt(param('anno'), 10);
+      var voce = param('voce');
+      if (anno && anno !== dati.meta.anno) { caricaAnno(anno, voce, false); return; }
+      if (!voce || !vaiA(voce)) {
+        stato.lato = latoPredefinito();
+        stato.percorso = []; stato.aperta = null; stato.tutte = false;
+        stato.sezione = sezionePredefinita();
+      }
+      testataDelLato(); costruisciTab(); sincronizzaTab(); spegni(); disegna();
+    });
   }
 
   function fallito(err) {
@@ -734,8 +1460,9 @@
     dom.vuoto.hidden = false;
     dom.vuoto.textContent = '';
     dom.vuoto.appendChild(document.createTextNode(
-      'I dati non sono stati caricati. Aperta con un doppio clic, la pagina non può leggere ' +
-      'assets/data.json: è una restrizione del browser. Avvia un server dalla cartella del progetto con '));
+      'I dati non sono stati caricati. Se la pagina è stata aperta con un doppio clic, il ' +
+      'browser le impedisce di leggere i file in assets/: è una restrizione del browser, non ' +
+      'un errore del sito. Avvia un server dalla cartella del progetto con '));
     var code = document.createElement('code');
     code.textContent = 'python3 -m http.server 8000';
     dom.vuoto.appendChild(code);
@@ -743,8 +1470,15 @@
     if (window.console) console.error(err);
   }
 
-  var mAnno = (location.search.match(/[?&]anno=(\d{4})/) || [])[1];
-  var sorgente = mAnno ? 'assets/data_' + mAnno + '.json' : 'assets/data.json';
+  var base = 'assets/' + VISTE[VISTA].prefisso;
+  var mAnno = param('anno');
+  var sorgente = /^\d{4}$/.test(mAnno) ? base + '_' + mAnno + '.json' : base + '.json';
+
+  // Il ponte è facoltativo: se manca, le due viste restano semplicemente
+  // separate e il resto della pagina funziona uguale.
+  var attesaPonte = fetch('assets/ponte.json')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .catch(function () { return null; });
 
   fetch(sorgente)
     .then(function (r) {
@@ -752,8 +1486,11 @@
       return r.json();
     })
     .catch(function () {
-      // anno richiesto non disponibile: torna all'ultimo pubblicato
-      return fetch('assets/data.json').then(function (r) { return r.json(); });
+      // anno richiesto non disponibile in questa vista: torna all'ultimo
+      return fetch(base + '.json').then(function (r) { return r.json(); });
+    })
+    .then(function (d) {
+      return attesaPonte.then(function (pp) { ponte = pp; return d; });
     })
     .then(inizializza)
     .catch(fallito);

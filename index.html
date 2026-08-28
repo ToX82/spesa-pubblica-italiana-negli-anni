@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0066cc">
 <meta name="color-scheme" content="light">
-<title>La spesa dello Stato</title>
-<meta name="description" content="La spesa dello Stato italiano, dal rendiconto 2012 alla legge di bilancio 2026: stessa cifra per amministrazione o per finalità, andamento storico voce per voce.">
+<title>Dove vanno i soldi — i conti pubblici italiani</title>
+<meta name="description" content="Quanto incassa e quanto spende la pubblica amministrazione italiana, dal 1995 a oggi: entrate, uscite e deficit voce per voce, con la classificazione COFOG e i dati Eurostat. E il bilancio dello Stato, ministero per ministero, dal 2011 al 2026.">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23ffffff"/><rect x="3" y="13" width="21" height="6" rx="1" fill="%230055b8"/><rect x="26" y="13" width="3" height="6" rx="1" fill="%230e8a72"/></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,16 +16,16 @@
 </head>
 <body>
 
-<a class="skip-link" href="#esplora">Vai all'esplorazione dei dati</a>
+<a class="skip-link" href="#esplora">Vai ai dati</a>
 
 <div class="testata-sottile">
   <div class="container">
     <div class="testata-sottile-contenuto">
-      <a class="testata-marchio" href="?" title="Torna all'anno più recente">La spesa dello Stato</a>
-      <nav class="anni" id="anni" aria-label="Anni disponibili" hidden></nav>
+      <a class="testata-marchio" href="?" title="Torna all'inizio">Dove vanno i soldi</a>
+      <span class="testata-contesto" id="testata-contesto"></span>
       <a class="testata-portale" id="fonte-portale"
-         href="https://bdap-opendata.rgs.mef.gov.it/" target="_blank" rel="noopener">
-        OpenBDAP<span class="visually-hidden">, il portale dei dati (si apre in un nuovo tab)</span>
+         href="https://ec.europa.eu/eurostat/web/main/data/database" target="_blank" rel="noopener">
+        Eurostat<span class="visually-hidden">, il portale dei dati (si apre in un nuovo tab)</span>
       </a>
     </div>
   </div>
@@ -33,10 +33,15 @@
 
 <header class="testata-centrale">
   <div class="container">
+
     <div class="testata-titolo-gruppo">
-      <p class="occhiello" id="occhiello"></p>
       <h1 class="titolo" id="titolo"></h1>
       <p class="sommario" id="sommario"></p>
+    </div>
+
+    <div class="testata-piede">
+      <p class="vista-nota" id="vista-nota"></p>
+      <p class="vista-altra" id="vista-altra"></p>
     </div>
   </div>
 </header>
@@ -44,13 +49,32 @@
 <main id="main">
 
   <section class="apertura" aria-labelledby="apertura-h">
-    <div class="container apertura-griglia">
-      <h2 class="visually-hidden" id="apertura-h">Il totale</h2>
-      <div class="apertura-cifra">
-        <span class="cifra" id="cifra-totale">—</span>
-        <span class="cifra-nota" id="cifra-nota"></span>
+    <div class="container">
+      <h2 class="visually-hidden" id="apertura-h">Il bilancio dell'anno</h2>
+
+      <div class="apertura-griglia">
+        <div class="apertura-conti">
+          <div class="conti" id="conti"></div>
+          <p class="racconto" id="racconto" hidden></p>
+        </div>
+        <p class="apertura-testo" id="apertura-testo"></p>
       </div>
-      <p class="apertura-testo" id="apertura-testo"></p>
+
+      <div class="tempo" id="tempo" hidden>
+        <div class="tempo-testa">
+          <label class="tempo-etichetta" for="anno-scelta">Scegli l'anno</label>
+          <p class="tempo-legenda" id="tempo-legenda" hidden></p>
+          <div class="tempo-passo">
+            <a class="tempo-freccia" id="anno-prec" rel="prev"
+               title="Anno precedente"><span aria-hidden="true">‹</span><span class="visually-hidden">Anno precedente</span></a>
+            <select class="tempo-scelta" id="anno-scelta"></select>
+            <a class="tempo-freccia" id="anno-succ" rel="next"
+               title="Anno successivo"><span aria-hidden="true">›</span><span class="visually-hidden">Anno successivo</span></a>
+          </div>
+        </div>
+        <div class="tempo-grafico" id="tempo-grafico"></div>
+      </div>
+
     </div>
   </section>
 
@@ -67,22 +91,36 @@
       <div id="pannello" role="tabpanel" tabindex="-1">
         <nav class="briciole" id="briciole" aria-label="Percorso"></nav>
 
-        <div class="barra-blocco">
-          <div class="barra" id="barra" role="group" aria-label="Composizione della voce selezionata"></div>
-          <div class="barra-legenda" id="barra-legenda"></div>
+        <div class="voce-testata" id="voce-testata" hidden>
+          <h3 class="voce-titolo" id="voce-titolo"></h3>
+          <p class="testata-cifre" id="testata-cifre"></p>
         </div>
 
         <div class="contesto" id="contesto" hidden>
-          <div class="contesto-riga"><span class="contesto-fetta" id="contesto-fetta"></span></div>
-          <p class="contesto-testo" id="contesto-testo"></p>
-          <div class="contesto-grafico" id="contesto-grafico"></div>
+          <div class="contesto-griglia" id="contesto-griglia">
+            <div class="contesto-parole" id="contesto-parole" hidden>
+              <h4 class="blocco-etichetta">Che cos&rsquo;è</h4>
+              <p class="nota-voce" id="nota-voce"></p>
+            </div>
+            <div class="contesto-ponte" id="contesto-ponte"></div>
+          </div>
+          <div class="contesto-andamento" id="contesto-andamento" hidden>
+            <h4 class="blocco-etichetta">Andamento</h4>
+            <div class="contesto-grafico" id="contesto-grafico"></div>
+          </div>
         </div>
 
-        <p class="nota-voce" id="nota-voce" hidden></p>
+        <div class="composizione">
+          <h4 class="blocco-etichetta" id="composizione-etichetta">Che cosa c&rsquo;è dentro</h4>
+          <div class="barra-blocco">
+            <div class="barra" id="barra" role="group" aria-label="Composizione della voce selezionata"></div>
+            <div class="barra-legenda" id="barra-legenda"></div>
+          </div>
 
-        <ol class="voci" id="voci"></ol>
+          <ol class="voci" id="voci"></ol>
 
-        <p class="vuoto" id="vuoto" hidden></p>
+          <p class="vuoto" id="vuoto" hidden></p>
+        </div>
       </div>
 
     </div>
@@ -96,14 +134,16 @@
       <dl class="fonte">
         <dt>Fonte</dt>
         <dd id="fonte-nome"></dd>
-        <dt>Documento</dt>
+        <dt>Vai ai dati</dt>
         <dd><a id="fonte-link" href="#" rel="noopener" target="_blank">Apri il dataset sul portale OpenBDAP</a></dd>
+        <dt>Altra vista</dt>
+        <dd id="fonte-altra"></dd>
         <dt>Come leggere</dt>
-        <dd id="come-leggere">Se una voce indica 12%, prende il 12% della voce che la contiene al livello superiore, non della spesa totale.</dd>
-        <dt>Nota</dt>
+        <dd id="come-leggere">Le percentuali sono riferite alla voce che contiene, non al totale generale: 12% significa il 12% del livello superiore.</dd>
+        <dt>Che numeri sono</dt>
         <dd id="fonte-metodo"></dd>
         <dt>Descrizioni</dt>
-        <dd>Le descrizioni delle voci sono sintesi redazionali di testi ufficiali: le competenze dei ministeri (D.Lgs. 300/1999 e riordini successivi), la struttura del bilancio per missioni e programmi (L. 196/2016) e la classificazione COFOG delle Nazioni Unite.</dd>
+        <dd id="fonte-descrizioni">Le descrizioni delle voci sono sintesi redazionali di testi ufficiali: le competenze dei ministeri (D.Lgs. 300/1999 e riordini successivi), la struttura del bilancio per missioni e programmi (L. 196/2016) e la classificazione COFOG delle Nazioni Unite. Sono spiegazioni redazionali, non fonti: i numeri provengono dai dataset indicati sopra.</dd>
       </dl>
     </section>
   </div>
