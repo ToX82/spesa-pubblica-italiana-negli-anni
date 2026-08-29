@@ -96,6 +96,15 @@ grafico a tutta larghezza), che cosa c'è dentro (la barra a fette e
 l'elenco delle voci figlie, attaccati perché sono la stessa informazione
 a due risoluzioni).
 
+Il grafico d'andamento si legge in due modi, e il commutatore sopra il
+grafico passa dall'uno all'altro: **valore**, gli euro anno per anno, e
+**quota %**, quanto quella voce pesa sul totale. Sono due domande
+diverse. La sanità nel 1995 valeva 45,8 miliardi e nel 2024 ne vale
+146,1: più che triplicata. Ma come quota della spesa pubblica è passata
+dal 9,9% al 13,2%, tre punti e mezzo in trent'anni. Molte voci crescono
+in euro e restano ferme, o arretrano, in quota: con il solo asse in euro
+quel movimento non si vede.
+
 Il **perimetro** — tutta la spesa pubblica oppure il solo bilancio dello
 Stato — non è un bivio in cima alla pagina: è una riga sotto la testata.
 Chi arriva non sa ancora che differenza c'è fra le due cose (è quello che

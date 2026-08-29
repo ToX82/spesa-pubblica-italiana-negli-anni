@@ -45,7 +45,8 @@
   var dati = null;
   var ponte = null;   // assets/ponte.json: le funzioni COFOG nelle due viste
   var tabBtns = [];
-  var stato = { lato: null, sezione: null, percorso: [], aperta: null, tutte: false };
+  var stato = { lato: null, sezione: null, percorso: [], aperta: null, tutte: false,
+                andamento: 'euro' };   // come si legge il grafico: euro | quota
 
   /* ── Numeri ────────────────────────────────────────────── */
 
@@ -227,12 +228,96 @@
     return host;
   }
 
-  // Grafico d'andamento: anni sull'asse, importi sull'altro, vuoti dove
-  // la voce non esisteva. Lo snippet va nel blocco di contesto e nelle schede.
+  // Il totale su cui si misura la quota: quello del lato aperto
+  // (entrate o uscite) dove i lati esistono, altrimenti il totale
+  // generale della vista.
+  function totaleStorico() {
+    return latoCorrente().storico || dati.meta.totale_storico;
+  }
+
+  // I decimali si decidono una volta per grafico, sulla scala della
+  // serie: «dal 9,88% al 13,2%» si legge male, «dal 9,9% al 13,2%» no.
+  function pctBreve(v, dec) {
+    return (dec === 2 ? nf2 : nf1).format(v) + '%';
+  }
+
+  // Punti percentuali: la differenza fra due quote non è una
+  // variazione percentuale, e chiamarla così sarebbe sbagliato.
+  function punti(v, dec) {
+    return (v > 0 ? '+' : v < 0 ? '−' : '') +
+      (dec === 2 ? nf2 : nf1).format(Math.abs(v)) + ' punti';
+  }
+
+  // Le due letture dell'andamento. In euro si vede quanto si spende;
+  // in quota si vede quanto pesa, ed è una domanda diversa: una voce
+  // può crescere di anno in anno e perdere terreno lo stesso.
+  var MODI = [
+    { id: 'euro',  nome: 'Valore',  spiega: 'Importi in euro, anno per anno' },
+    { id: 'quota', nome: 'Quota %', spiega: 'Peso della voce sul totale, anno per anno' }
+  ];
+
+  function sceltaModo(modo) {
+    var box = document.createElement('div');
+    box.className = 'andamento-modo';
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-label', 'Come leggere l’andamento');
+    MODI.forEach(function (m) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'andamento-modo-voce' + (m.id === modo ? ' andamento-modo-qui' : '');
+      b.textContent = m.nome;
+      b.title = m.spiega;
+      b.setAttribute('aria-pressed', m.id === modo ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        if (stato.andamento === m.id) return;
+        stato.andamento = m.id;
+        ridisegnaAndamenti();
+      });
+      box.appendChild(b);
+    });
+    return box;
+  }
+
+  // Il modo è una preferenza di lettura, non uno stato della voce:
+  // vale per tutti i grafici aperti, che si ridisegnano insieme.
+  function ridisegnaAndamenti() {
+    nascondiTip();
+    var attivo = document.activeElement;
+    var figure = [].slice.call(document.querySelectorAll('.andamento'));
+    figure.forEach(function (vecchia) {
+      if (!vecchia.parentNode || !vecchia.datiNodo) return;
+      var bottoni = [].slice.call(vecchia.querySelectorAll('.andamento-modo-voce'));
+      var iFuoco = bottoni.indexOf(attivo);
+      var nuova = graficoAndamento(vecchia.datiNodo, vecchia.datiLarghezza);
+      if (!nuova) return;
+      vecchia.parentNode.replaceChild(nuova, vecchia);
+      if (iFuoco >= 0) {
+        var b = nuova.querySelectorAll('.andamento-modo-voce')[iFuoco];
+        if (b) b.focus();
+      }
+    });
+  }
+
+  // Grafico d'andamento: anni sull'asse, importi (o quote) sull'altro,
+  // vuoti dove la voce non esisteva. Lo snippet va nel blocco di
+  // contesto e nelle schede.
   function graficoAndamento(nodo, larghezza) {
-    var p = serieStorico(nodo);
-    if (!p) return null;
-    var ann = dati.meta.anni, ts = latoCorrente().storico || dati.meta.totale_storico;
+    var grezza = serieStorico(nodo);
+    if (!grezza) return null;
+    var ann = dati.meta.anni, ts = totaleStorico();
+
+    // La quota vuole importo e totale dello stesso anno: dove il totale
+    // manca il punto non si può calcolare e l'anno resta vuoto.
+    var quote = [];
+    if (ts) grezza.forEach(function (q) {
+      if (ts[q.i]) quote.push({ anno: q.anno, i: q.i, valore: (q.valore / ts[q.i]) * 100, euro: q.valore });
+    });
+    var quotaPossibile = quote.length >= 2;
+    var modo = (stato.andamento === 'quota' && quotaPossibile) ? 'quota' : 'euro';
+    var p = modo === 'quota' ? quote : grezza.map(function (q) {
+      return { anno: q.anno, i: q.i, valore: q.valore, euro: q.valore };
+    });
+
     var W = larghezza || 560;
     var H = larghezza ? (larghezza < 620 ? 190 : 250) : 176;
     var ML = 52, MR = 16, MT = 18, MB = 34;
@@ -242,7 +327,7 @@
       if (q.valore < vmin) vmin = q.valore;
       if (q.valore > vmax) vmax = q.valore;
     });
-    if (vmax === vmin) vmax = vmin + 1;
+    if (vmax === vmin) vmax = vmin + (modo === 'quota' ? 0.1 : 1);
     var pad = (vmax - vmin) * 0.1;
     var lo = vmin - pad, hi = vmax + pad;
     function x(q) { return ML + (q.i / (ann.length - 1)) * iw; }
@@ -251,15 +336,28 @@
     var primo = p[0], ultimo = p[p.length - 1];
     var pct = primo.valore ? ((ultimo.valore - primo.valore) / primo.valore) * 100 : null;
     var divisore = Math.abs(vmax) >= 1e9 ? 1e9 : 1e6;
+    var dec = Math.abs(vmax) >= 10 ? 1 : 2;
+
+    function segna(v) { return modo === 'quota' ? pctBreve(v, dec) : euroBreve(v); }
+    function segnaAsse(v) {
+      return modo === 'quota' ? pctBreve(v, dec) : nf.format(Math.round(v / divisore));
+    }
 
     var fig = document.createElement('figure');
     fig.className = 'andamento';
+    // servono a ridisegnare lo stesso grafico quando cambia il modo
+    fig.datiNodo = nodo;
+    fig.datiLarghezza = larghezza;
+    if (quotaPossibile) fig.appendChild(sceltaModo(modo));
+
     var svg = svgEl('svg', {
       viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img'
     });
-    svg.setAttribute('aria-label', 'Andamento dal ' + primo.anno + ' al ' + ultimo.anno +
-      ': da ' + euroBreve(primo.valore) + ' a ' + euroBreve(ultimo.valore) +
-      (pct !== null ? ', ' + (pct > 0 ? '+' : '−') + nf1.format(Math.abs(pct)) + '%' : '') + '.');
+    svg.setAttribute('aria-label', (modo === 'quota' ? 'Quota ' + etichettaTotale() + ' dal ' : 'Andamento dal ') +
+      primo.anno + ' al ' + ultimo.anno +
+      ': da ' + segna(primo.valore) + ' a ' + segna(ultimo.valore) +
+      (modo === 'quota' ? ', ' + punti(ultimo.valore - primo.valore, dec)
+        : pct !== null ? ', ' + (pct > 0 ? '+' : '−') + nf1.format(Math.abs(pct)) + '%' : '') + '.');
 
     [vmax, (vmax + vmin) / 2, vmin].forEach(function (v, i) {
       svg.appendChild(svgEl('line', {
@@ -268,7 +366,7 @@
       }));
       if (i !== 1) {
         var t = svgEl('text', { x: ML - 8, y: (y(v) + 3.5).toFixed(1), 'text-anchor': 'end', 'class': 'asse' });
-        t.textContent = nf.format(Math.round(v / divisore));
+        t.textContent = segnaAsse(v);
         svg.appendChild(t);
       }
     });
@@ -327,7 +425,7 @@
       x: (tx + (anchor === 'end' ? -9 : 9)).toFixed(1), y: (y(ultimo.valore) - 8).toFixed(1),
       'text-anchor': anchor, 'class': 'valore'
     });
-    vt.textContent = euroBreve(ultimo.valore);
+    vt.textContent = segna(ultimo.valore);
     svg.appendChild(vt);
 
     var passo = iw / (ann.length - 1);
@@ -339,8 +437,10 @@
         x: (ML + i * passo - passo / 2).toFixed(1), y: MT,
         width: (passo + 1).toFixed(1), height: ih, fill: 'transparent'
       });
-      var testo = a + ' · ' + euroBreve(q.valore) +
-        (ts && ts[i] ? ' · ' + perc(q.valore, ts[i]) + ' ' + etichettaTotale() : '');
+      var testo = modo === 'quota'
+        ? a + ' · ' + pctBreve(q.valore, dec) + ' ' + etichettaTotale() + ' · ' + euroBreve(q.euro)
+        : a + ' · ' + euroBreve(q.valore) +
+          (ts && ts[i] ? ' · ' + perc(q.valore, ts[i]) + ' ' + etichettaTotale() : '');
       rect.addEventListener('mouseenter', function () { mostraTip(rect, testo); });
       rect.addEventListener('mouseleave', nascondiTip);
       svg.appendChild(rect);
@@ -348,11 +448,18 @@
 
     fig.appendChild(svg);
     var cap = document.createElement('figcaption');
-    var testo = 'Andamento ' + primo.anno + '–' + ultimo.anno + ': ' +
-      (pct === null ? euroBreve(ultimo.valore)
-        : (pct > 0 ? '+' : '−') + nf1.format(Math.abs(pct)) + '% (' +
-          euroBreve(primo.valore) + ' → ' + euroBreve(ultimo.valore) + ')') +
-      ' · importi in ' + (divisore === 1e9 ? 'miliardi' : 'milioni') + ' di €';
+    var testo;
+    if (modo === 'quota') {
+      testo = 'Quota ' + etichettaTotale() + ' ' + primo.anno + '–' + ultimo.anno + ': ' +
+        'dal ' + pctBreve(primo.valore, dec) + ' al ' + pctBreve(ultimo.valore, dec) +
+        ' (' + punti(ultimo.valore - primo.valore, dec) + ')';
+    } else {
+      testo = 'Andamento ' + primo.anno + '–' + ultimo.anno + ': ' +
+        (pct === null ? euroBreve(ultimo.valore)
+          : (pct > 0 ? '+' : '−') + nf1.format(Math.abs(pct)) + '% (' +
+            euroBreve(primo.valore) + ' → ' + euroBreve(ultimo.valore) + ')') +
+        ' · importi in ' + (divisore === 1e9 ? 'miliardi' : 'milioni') + ' di €';
+    }
     if (p.length < ann.length) testo += ' · anni con dato: ' + p.length + ' su ' + ann.length;
     var conPrevisione = p.some(function (q) { return ePrevisione(q.anno); });
     if (conPrevisione) {

@@ -638,6 +638,41 @@ html[data-caricando] .esplora{opacity:.5;transition:opacity 120ms ease}
   fill:var(--inchiostro);
 }
 
+/* Le due letture dell'andamento: la cifra e il peso. Sta sopra il
+   grafico, allineato a destra, perché è un comando del grafico e non
+   un titolo del blocco. */
+.andamento-modo{
+  display:flex;
+  justify-content:flex-end;
+  margin:0 0 8px;
+}
+.andamento-modo-voce{
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid var(--filo);
+  background:#fff;
+  color:var(--grigio);
+  font-family:var(--mono);
+  font-size:.7rem;
+  letter-spacing:.04em;
+  line-height:1;
+  padding:6px 11px;
+  cursor:pointer;
+  transition:color 160ms ease,background-color 160ms ease,border-color 160ms ease;
+}
+.andamento-modo-voce + .andamento-modo-voce{margin-left:-1px}
+.andamento-modo-voce:first-child{border-radius:var(--raggio) 0 0 var(--raggio)}
+.andamento-modo-voce:last-child{border-radius:0 var(--raggio) var(--raggio) 0}
+.andamento-modo-voce:hover{color:var(--inchiostro);background:var(--superficie)}
+.andamento-modo-voce:focus-visible{position:relative;z-index:1}
+.andamento-modo-qui,
+.andamento-modo-qui:hover{
+  background:var(--accento-scuro);
+  border-color:var(--accento-scuro);
+  color:#fff;
+  font-weight:600;
+}
+
 /* ── Nota della voce corrente ───────────────────────────── */
 
 .nota-voce{
