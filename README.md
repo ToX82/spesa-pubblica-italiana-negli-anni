@@ -1,7 +1,7 @@
 # Dove vanno i soldi
 
 Una pagina statica con **due viste** sulla stessa domanda, che si
-parlano fra loro:
+parlano fra loro. Visibile direttamente su [https://tox82.github.io/spesa-pubblica-italiana-negli-anni/](https://tox82.github.io/spesa-pubblica-italiana-negli-anni/).
 
 - **Tutta la spesa pubblica** *(vista predefinita)* — il bilancio di
   tutte le amministrazioni pubbliche (1995–2024) in contabilità
@@ -280,9 +280,3 @@ bilancio restano open data della Ragioneria generale dello Stato,
 licenza CC BY, e vanno citati come indicato dal portale OpenBDAP; i dati
 di contabilità nazionale sono di Eurostat (fonte da citare, riuso
 libero) su trasmissione dell'Istat.
-
-Per pubblicare: il repository è pronto per GitHub Pages — i JSON
-compilati e i dati originali sono inclusi, quindi il sito funziona
-appena pushato (Settings → Pages → branch principale, cartella radice) e
-chi clona può ricostruire o aggiornare i dati con i due script di
-scaricamento.
